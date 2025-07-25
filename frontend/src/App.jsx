@@ -1,20 +1,8 @@
-import React,{ useState, useCallback,useEffect,useRef,useMemo} from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { Rnd } from 'react-rnd';
 import { 
-  Target, 
-  Timer, 
-  CheckSquare, 
-  Trello, 
-  Brain, 
-  X, 
-  Ruler, 
-  Settings, 
-  Sun, 
-  Moon, 
-  Trash2, 
-  HelpCircle,
-  Hand,
-  Circle
+  Target, Timer, CheckSquare, Trello, Brain, X, Ruler, Settings, 
+  Sun, Moon, Trash2, HelpCircle, Hand, Circle
 } from 'lucide-react';
 
 import { Analytics } from "@vercel/analytics/react"
@@ -25,70 +13,24 @@ import DailyFocus from './components/DailyFocus';
 import KanbanBoard from './components/KanbanBoard';
 import Mindmap from './components/MindMap';
 
-const DraggableComponent =React.memo(({ 
-  component, 
-  children, 
-  onRemove, 
-  onUpdate, 
-  isSelected, 
-  onSelect 
-}) => {
+const DraggableComponent = React.memo(({ component, children, onRemove, onUpdate, isSelected, onSelect }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
-  const dragStartRef = useRef(null);
   const animationFrameRef = useRef(null);
 
-  // ✅ Throttled update function using RAF
   const throttledUpdate = useCallback((id, updates) => {
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current);
-    }
-    
+    if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
     animationFrameRef.current = requestAnimationFrame(() => {
       onUpdate(id, updates);
       animationFrameRef.current = null;
     });
   }, [onUpdate]);
 
-  const handleDragStart = useCallback((e) => {
-    setIsDragging(true);
-    dragStartRef.current = { x: e.clientX, y: e.clientY };
-    
-    // GPU layer oluştur
-    e.target.style.willChange = 'transform';
-  }, []);
-
   const handleDrag = useCallback((e, d) => {
-    // Sadece büyük değişiklikler için update et (performance)
-    if (dragStartRef.current) {
-      const deltaX = Math.abs(e.clientX - dragStartRef.current.x);
-      const deltaY = Math.abs(e.clientY - dragStartRef.current.y);
-      
-      // 5px'den fazla hareket ettiyse update et
-      if (deltaX > 5 || deltaY > 5) {
-        throttledUpdate(component.id, { x: d.x, y: d.y });
-        dragStartRef.current = { x: e.clientX, y: e.clientY };
-      }
-    }
+    throttledUpdate(component.id, { x: d.x, y: d.y });
   }, [component.id, throttledUpdate]);
 
-  const handleDragStop = useCallback((e, d) => {
-    setIsDragging(false);
-    dragStartRef.current = null;
-    
-    // GPU layer temizle
-    e.target.style.willChange = 'auto';
-    
-    // Final pozisyonu kaydet
-    onUpdate(component.id, { x: d.x, y: d.y });
-  }, [component.id, onUpdate]);
-
-  const handleResizeStart = useCallback(() => {
-    setIsResizing(true);
-  }, []);
-
   const handleResize = useCallback((e, direction, ref, delta, position) => {
-    // Resize sırasında throttle
     throttledUpdate(component.id, {
       width: ref.offsetWidth,
       height: ref.offsetHeight,
@@ -97,102 +39,58 @@ const DraggableComponent =React.memo(({
     });
   }, [component.id, throttledUpdate]);
 
-  const handleResizeStop = useCallback((e, direction, ref, delta, position) => {
-    setIsResizing(false);
-    
-    // Final boyutu kaydet
-    onUpdate(component.id, {
-      width: ref.offsetWidth,
-      height: ref.offsetHeight,
-      x: position.x,
-      y: position.y,
-    });
-  }, [component.id, onUpdate]);
-
   const handleClick = useCallback((e) => {
     e.stopPropagation();
-    if (!isDragging && !isResizing) {
-      onSelect(component.id);
-    }
+    if (!isDragging && !isResizing) onSelect(component.id);
   }, [component.id, onSelect, isDragging, isResizing]);
 
-  // ✅ Memoized styles
   const containerStyle = useMemo(() => ({
-    transition: isDragging || isResizing ? 'none' : 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+    transition: isDragging || isResizing ? 'none' : 'all 0.2s ease',
     transform: `translateZ(0) ${isSelected ? 'scale(1.01)' : 'scale(1)'}`,
-    willChange: isDragging || isResizing ? 'transform' : 'auto',
   }), [isDragging, isResizing, isSelected]);
 
-  const containerClasses = useMemo(() => [
-    'relative w-full h-full rounded-xl shadow-lg border overflow-hidden',
-    isDragging ? 'is-dragging' : '',
-    isSelected ? 'ring-2 ring-primary ring-opacity-60 border-primary bg-base-100 shadow-xl' 
-               : 'border-base-300 bg-base-100 hover:shadow-xl hover:border-base-400',
-    'transition-all duration-200'
-  ].filter(Boolean).join(' '), [isDragging, isSelected]);
-
-  // ✅ Optimize resize handles - sadece gerekli olanlar
-  const resizeHandles = useMemo(() => ({
-    top: false,
-    right: false,
-    bottom: false,
-    left: false,
-    topRight: false,
-    bottomRight: true, // Sadece sağ alt köşe
-    bottomLeft: false,
-    topLeft: false,
-  }), []);
-
-  const resizeHandleStyles = useMemo(() => ({
-    bottomRight: {
-      width: '12px',
-      height: '12px',
-      background: 'linear-gradient(-45deg, transparent 0%, transparent 40%, #64748b 40%, #64748b 60%, transparent 60%)',
-      cursor: 'nw-resize',
-    }
-  }), []);
-
-  // Cleanup on unmount
-  React.useEffect(() => {
-    return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
+  useEffect(() => () => {
+    if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
   }, []);
 
   return (
     <Rnd
       size={{ width: component.width, height: component.height }}
       position={{ x: component.x, y: component.y }}
-      onDragStart={handleDragStart}
+      onDragStart={() => setIsDragging(true)}
       onDrag={handleDrag}
-      onDragStop={handleDragStop}
-      onResizeStart={handleResizeStart}
+      onDragStop={() => setIsDragging(false)}
+      onResizeStart={() => setIsResizing(true)}
       onResize={handleResize}
-      onResizeStop={handleResizeStop}
+      onResizeStop={() => setIsResizing(false)}
       bounds="parent"
       minWidth={250}
       minHeight={180}
       dragHandleClassName="drag-handle"
       cancel=".rnd-cancel-drag"
-      enableResizing={resizeHandles}
-      resizeHandleStyles={resizeHandleStyles}
+      enableResizing={{ bottomRight: true }}
+      resizeHandleStyles={{
+        bottomRight: {
+          width: '12px',
+          height: '12px',
+          background: 'linear-gradient(-45deg, transparent 0%, transparent 40%, #64748b 40%, #64748b 60%, transparent 60%)',
+          cursor: 'nw-resize',
+        }
+      }}
       style={containerStyle}
-      className="draggable-component"
-      // ✅ Performance optimizations
-      dragAxis="both"
-      resizeGrid={[1, 1]} // Grid snap devre dışı
-      dragGrid={[1, 1]}
     >
       <div
         onClick={handleClick}
-        className={containerClasses}
+        className={`relative w-full h-full rounded-xl shadow-lg border transition-all duration-200 overflow-hidden ${
+          isSelected 
+            ? 'ring-2 ring-primary border-primary bg-base-100 shadow-xl' 
+            : 'border-base-300 bg-base-100 hover:shadow-xl hover:border-base-400'
+        }`}
       >
-        {/* Header with drag handle and controls */}
+        {/* Header */}
         <div className="drag-handle flex items-center justify-between p-2 sm:p-3 bg-gradient-to-r from-primary/10 to-secondary/10 border-b border-base-200 cursor-move">
           <div className="flex items-center space-x-2 min-w-0 flex-1">
-            <Circle className="w-2 h-2 text-primary opacity-60 flex-shrink-0 fill-current" />
+            <Circle className="w-2 h-2 text-primary opacity-60 fill-current flex-shrink-0" />
             <h2 className="text-sm sm:text-lg font-semibold text-base-content truncate">
               {component.title}
             </h2>
@@ -225,7 +123,7 @@ const DraggableComponent =React.memo(({
           </div>
         </div>
 
-        {/* Content area */}
+        {/* Content */}
         <div className="p-2 sm:p-4 h-[calc(100%-3rem)] sm:h-[calc(100%-4rem)] overflow-auto custom-scrollbar">
           {children}
         </div>
@@ -244,112 +142,62 @@ const DraggableComponent =React.memo(({
 
 DraggableComponent.displayName = 'DraggableComponent';
 
-// Welcome Modal for first-time users
-function WelcomeModal({ isOpen, onClose}) {
+function WelcomeModal({ isOpen, onClose }) {
   if (!isOpen) return null;
+
+  const features = [
+    { icon: Timer, title: "Pomodoro Timer", desc: "Work in focused 25-minute intervals with breaks" },
+    { icon: CheckSquare, title: "Task Lists", desc: "Keep track of your to-dos and mark them complete" },
+    { icon: Trello, title: "Kanban Board", desc: "Organize tasks in columns (To Do, In Progress, Done)" },
+    { icon: Brain, title: "Mind Maps", desc: "Create visual connections between ideas" }
+  ];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-base-100 p-6 rounded-2xl shadow-2xl max-w-md mx-4 border border-base-300">
-        <div className="text-center mb-6">
-          <Hand className="w-12 h-12 mx-auto mb-2 text-primary" />
-          <h2 className="text-2xl font-bold text-base-content mb-2">Welcome to Productivie!</h2>
-          <p className="text-base-content/70">Your customizable productivity workspace</p>
+      <div className="bg-base-100 p-4 sm:p-6 rounded-2xl shadow-2xl max-w-md mx-4 border border-base-300">
+        <div className="text-center mb-4 sm:mb-6">
+          <Hand className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-2 text-primary" />
+          <h2 className="text-xl sm:text-2xl font-bold text-base-content mb-2">Welcome to Productivie!</h2>
+          <p className="text-sm text-base-content/70">Your customizable productivity workspace</p>
         </div>
         
-        <div className="space-y-4 text-sm">
-          <div className="flex items-start space-x-3">
-            <Timer className="w-5 h-5 text-secondary mt-0.5 flex-shrink-0" />
-            <div>
-              <strong>Pomodoro Timer:</strong> Work in focused 25-minute intervals with breaks
+        <div className="space-y-3 sm:space-y-4 text-sm">
+          {features.map(({ icon: Icon, title, desc }) => (
+            <div key={title} className="flex items-start space-x-3">
+              <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-secondary mt-0.5 flex-shrink-0" />
+              <div><strong>{title}:</strong> {desc}</div>
             </div>
-          </div>
-          <div className="flex items-start space-x-3">
-            <CheckSquare className="w-5 h-5 text-accent mt-0.5 flex-shrink-0" />
-            <div>
-              <strong>Task Lists:</strong> Keep track of your to-dos and mark them complete
-            </div>
-          </div>
-          <div className="flex items-start space-x-3">
-            <Trello className="w-5 h-5 text-info mt-0.5 flex-shrink-0" />
-            <div>
-              <strong>Kanban Board:</strong> Organize tasks in columns (To Do, In Progress, Done)
-            </div>
-          </div>
-          <div className="flex items-start space-x-3">
-            <Brain className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
-            <div>
-              <strong>Mind Maps:</strong> Create visual connections between ideas
-            </div>
-          </div>
+          ))}
         </div>
 
-        <div className="mt-6 space-y-2">
-          <button
-            onClick={onClose}
-            className="btn btn-ghost w-full"
-          >
-            I'll Figure It Out
-          </button>
-        </div>
+        <button onClick={onClose} className="btn btn-ghost w-full mt-4 sm:mt-6">
+          I'll Figure It Out
+        </button>
       </div>
     </div>
   );
 }
 
-// Component palette with limits and better descriptions
-function ComponentPalette({ onAddComponent, theme, componentCount, maxComponents = 8 }) {
+function ComponentPalette({ onAddComponent, componentCount, maxComponents = 8 }) {
   const components = [
-    { 
-      type: 'DailyFocus', 
-      title: 'Daily Focus', 
-      icon: Target, 
-      color: 'btn-primary',
-      description: 'Set your main goal for today'
-    },
-    { 
-      type: 'PomodoroSection', 
-      title: 'Focus Timer', 
-      icon: Timer, 
-      color: 'btn-secondary',
-      description: '25-min work sessions with breaks'
-    },
-    { 
-      type: 'TaskSection', 
-      title: 'Task List', 
-      icon: CheckSquare, 
-      color: 'btn-accent',
-      description: 'Simple to-do list with checkboxes'
-    },
-    { 
-      type: 'KanbanBoard', 
-      title: 'Project Board', 
-      icon: Trello, 
-      color: 'btn-info',
-      description: 'Organize tasks in columns'
-    },
-    { 
-      type: 'Mindmap', 
-      title: 'Mind Map', 
-      icon: Brain, 
-      color: 'btn-primary',
-      description: 'Visual brainstorming tool'
-    },
+    { type: 'DailyFocus', title: 'Daily Focus', icon: Target, color: 'btn-primary', desc: 'Set your main goal for today' },
+    { type: 'PomodoroSection', title: 'Focus Timer', icon: Timer, color: 'btn-secondary', desc: '25-min work sessions with breaks' },
+    { type: 'TaskSection', title: 'Task List', icon: CheckSquare, color: 'btn-accent', desc: 'Simple to-do list with checkboxes' },
+    { type: 'KanbanBoard', title: 'Project Board', icon: Trello, color: 'btn-info', desc: 'Organize tasks in columns' },
+    { type: 'Mindmap', title: 'Mind Map', icon: Brain, color: 'btn-primary', desc: 'Visual brainstorming tool' },
   ];
 
   const isAtLimit = componentCount >= maxComponents;
 
   return (
-    <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-base-200 to-base-300 border border-base-300">
+    <div className="mb-4 sm:mb-6 p-3 sm:p-4 rounded-xl bg-gradient-to-r from-base-200 to-base-300 border border-base-300">
       <div className="flex justify-between items-center mb-3">
-        <h3 className="text-lg font-semibold text-base-content">Add Productivity Tools</h3>
-        <div className="text-sm text-base-content/60">
-          {componentCount}/{maxComponents} components
-        </div>
+        <h3 className="text-base sm:text-lg font-semibold text-base-content">Add Productivity Tools</h3>
+        <div className="text-xs sm:text-sm text-base-content/60">{componentCount}/{maxComponents} components</div>
       </div>
       
       {isAtLimit && (
-        <div className="mb-3 p-2 bg-warning/20 border border-warning/30 rounded-lg text-sm text-warning-content">
+        <div className="mb-3 p-2 bg-warning/20 border border-warning/30 rounded-lg text-xs sm:text-sm text-warning-content">
           <span className="inline-flex items-center gap-2">
             <HelpCircle className="w-4 h-4" />
             Maximum components reached. Remove some to add new ones.
@@ -357,22 +205,22 @@ function ComponentPalette({ onAddComponent, theme, componentCount, maxComponents
         </div>
       )}
       
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
-        {components.map(({ type, title, icon: Icon, color, description }) => (
-          <div key={type} className="space-y-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2 sm:gap-3">
+        {components.map(({ type, title, icon: Icon, color, desc }) => (
+          <div key={type} className="space-y-1 sm:space-y-2">
             <button
               onClick={() => onAddComponent(type)}
               disabled={isAtLimit}
-              className={`btn btn-sm ${color} w-full gap-2 transition-all duration-200 hover:scale-105 ${
+              className={`btn btn-sm ${color} w-full gap-1 sm:gap-2 transition-all duration-200 hover:scale-105 ${
                 isAtLimit ? 'btn-disabled opacity-50' : ''
               }`}
               title={`Add ${title}`}
             >
-              <Icon className="w-4 h-4" />
-              <span className="truncate">{title}</span>
+              <Icon className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="truncate text-xs sm:text-sm">{title}</span>
             </button>
-            <p className="text-xs text-base-content/60 text-center px-1">
-              {description}
+            <p className="text-xs text-base-content/60 text-center px-1 hidden sm:block">
+              {desc}
             </p>
           </div>
         ))}
@@ -381,7 +229,6 @@ function ComponentPalette({ onAddComponent, theme, componentCount, maxComponents
   );
 }
 
-// Help tooltip component
 function HelpTooltip({ children, content }) {
   const [isVisible, setIsVisible] = useState(false);
 
@@ -405,6 +252,7 @@ function HelpTooltip({ children, content }) {
 }
 
 function App() {
+  // All original state variables preserved
   const [tasks, setTasks] = useState([]);
   const [theme, setTheme] = useState('retro');
   const [settings, setSettings] = useState({
@@ -425,33 +273,9 @@ function App() {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
   const [activeComponents, setActiveComponents] = useState([
-    { 
-      id: 'dailyFocus', 
-      type: 'DailyFocus', 
-      title: 'Daily Focus', 
-      x: 50, 
-      y: 100, 
-      width: 320, 
-      height: 220 
-    },
-    { 
-      id: 'pomodoro', 
-      type: 'PomodoroSection', 
-      title: 'Focus Timer', 
-      x: 400, 
-      y: 100, 
-      width: 340, 
-      height: 280 
-    },
-    { 
-      id: 'tasks', 
-      type: 'TaskSection', 
-      title: 'Task List', 
-      x: 50, 
-      y: 350, 
-      width: 320, 
-      height: 300 
-    },
+    { id: 'dailyFocus', type: 'DailyFocus', title: 'Daily Focus', x: 50, y: 100, width: 320, height: 220 },
+    { id: 'pomodoro', type: 'PomodoroSection', title: 'Focus Timer', x: 400, y: 100, width: 340, height: 280 },
+    { id: 'tasks', type: 'TaskSection', title: 'Task List', x: 50, y: 350, width: 320, height: 300 },
   ]);
 
   // Check if user is new
@@ -492,10 +316,7 @@ function App() {
   }, []);
 
   const addComponent = useCallback((type) => {
-    // Prevent adding too many components
-    if (activeComponents.length >= 8) {
-      return;
-    }
+    if (activeComponents.length >= 8) return;
 
     const titleMap = {
       DailyFocus: 'Daily Focus',
@@ -540,12 +361,6 @@ function App() {
 
   const handleBackgroundClick = useCallback(() => {
     setSelectedComponent(null);
-  }, []);
-
-  const startTour = useCallback(() => {
-    setShowWelcome(false);
-    // You could implement a proper tour library here
-    alert("Tour functionality would be implemented with a library like Intro.js or React Joyride!");
   }, []);
 
   const clearWorkspace = useCallback(() => {
@@ -600,16 +415,16 @@ function App() {
       className="min-h-screen bg-gradient-to-br from-base-200 via-base-100 to-base-200 transition-all duration-500"
       onClick={handleBackgroundClick}
     >
-      {/* Enhanced header with better mobile support */}
+      {/* Header */}
       <header className="sticky top-0 z-50 backdrop-blur-md bg-base-100/80 border-b border-base-300">
-        <div className="container mx-auto px-4 sm:px-6 py-3 sm:py-4">
+        <div className="container mx-auto px-3 sm:px-6 py-2 sm:py-4">
           <Analytics/>
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-2 sm:space-x-3 min-w-0">
               <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center flex-shrink-0">
                 <Brain className="w-4 h-4 sm:w-5 sm:h-5 text-primary-content" />
               </div>
-              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-primary truncate">
+              <h1 className="text-lg sm:text-2xl md:text-3xl font-bold text-primary truncate">
                 Productivie
               </h1>
             </div>
@@ -664,18 +479,17 @@ function App() {
         </div>
       </header>
 
-      <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-6">
+      <div className="container mx-auto px-3 sm:px-6 py-3 sm:py-6">
         <ComponentPalette 
           onAddComponent={addComponent} 
-          theme={theme} 
           componentCount={activeComponents.length}
           maxComponents={8}
         />
 
-        {/* Workspace area with better mobile handling */}
-        <div className={`relative ${isMobile ? 'min-h-screen' : 'min-h-[2000px]'} rounded-2xl bg-base-50 border-2 border-dashed border-base-300 overflow-hidden`}>
+        {/* Workspace area */}
+        <div className={`relative ${isMobile ? 'min-h-screen' : 'min-h-[2000px]'} rounded-xl sm:rounded-2xl bg-base-50 border-2 border-dashed border-base-300 overflow-hidden`}>
           {activeComponents.length === 0 ? (
-            <div className="absolute inset-0 flex items-center justify-center p-6">
+            <div className="absolute inset-0 flex items-center justify-center p-4 sm:p-6">
               <div className="text-center max-w-md">
                 <Target className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 text-base-content/50" />
                 <h3 className="text-lg sm:text-xl font-semibold text-base-content/60 mb-2">
@@ -713,7 +527,6 @@ function App() {
       <WelcomeModal
         isOpen={showWelcome}
         onClose={() => setShowWelcome(false)}
-        onStartTour={startTour}
       />
 
       {/* Settings Modal */}
@@ -724,7 +537,8 @@ function App() {
           onClose={() => setIsSettingsOpen(false)}
         />
       )}
-      {/* Custom scrollbar styles with mobile optimization */}
+
+      {/* Custom styles */}
       <style>{`
         .custom-scrollbar::-webkit-scrollbar {
           width: 4px;
