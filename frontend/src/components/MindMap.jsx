@@ -1,4 +1,18 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { 
+  Brain, 
+  ZoomIn, 
+  ZoomOut, 
+  Home, 
+  FolderOpen, 
+  Save, 
+  Target, 
+  FileText, 
+  Edit3, 
+  Link, 
+  X, 
+  Plus 
+} from 'lucide-react';
 
 // Custom hooks for better separation of concerns
 const useViewport = () => {
@@ -78,7 +92,6 @@ const Connection = ({ from, to, isSelected }) => {
   );
 };
 
-
 // Simplified Node component
 const Node = ({ node, isSelected, isConnecting, onAction }) => {
   const [isEditing, setIsEditing] = useState(false);
@@ -88,6 +101,19 @@ const Node = ({ node, isSelected, isConnecting, onAction }) => {
     root: 'bg-primary text-primary-content border-primary scale-105',
     main: 'bg-secondary text-secondary-content border-secondary',
     sub: 'bg-base-100 text-base-content border-base-300',
+  };
+
+  const getNodeIcon = (type) => {
+    switch (type) {
+      case 'root':
+        return <Target className="w-3 h-3 inline mr-1" />;
+      case 'main':
+        return <FileText className="w-3 h-3 inline mr-1" />;
+      case 'sub':
+        return <Edit3 className="w-3 h-3 inline mr-1" />;
+      default:
+        return null;
+    }
   };
 
   const handleEdit = useCallback(() => {
@@ -131,7 +157,10 @@ const Node = ({ node, isSelected, isConnecting, onAction }) => {
               autoFocus
             />
           ) : (
-            <div className="text-sm font-medium break-words">{node.text}</div>
+            <div className="text-sm font-medium break-words">
+              {getNodeIcon(node.type)}
+              {node.text}
+            </div>
           )}
         </div>
 
@@ -142,14 +171,14 @@ const Node = ({ node, isSelected, isConnecting, onAction }) => {
             className={`btn btn-xs btn-circle ${isConnecting ? 'btn-primary' : 'btn-ghost bg-base-100/90'}`}
             title="Connect (C)"
           >
-            🔗
+            <Link className="w-3 h-3" />
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); onAction('delete', node.id); }}
             className="btn btn-xs btn-circle btn-error"
             title="Delete (Del)"
           >
-            ✕
+            <X className="w-3 h-3" />
           </button>
         </div>
 
@@ -161,9 +190,18 @@ const Node = ({ node, isSelected, isConnecting, onAction }) => {
               onChange={(e) => onAction('changeType', node.id, e.target.value)}
               className="select select-xs"
             >
-              <option value="root">🎯 Root</option>
-              <option value="main">📋 Main</option>
-              <option value="sub">📝 Sub</option>
+              <option value="root">
+                <Target className="w-3 h-3 inline mr-1" />
+                Root
+              </option>
+              <option value="main">
+                <FileText className="w-3 h-3 inline mr-1" />
+                Main
+              </option>
+              <option value="sub">
+                <Edit3 className="w-3 h-3 inline mr-1" />
+                Sub
+              </option>
             </select>
           </div>
         )}
@@ -424,18 +462,51 @@ const Mindmap = () => {
       {/* Toolbar */}
       <div className="flex items-center justify-between p-2 bg-base-100 border-b">
         <div className="flex items-center gap-2">
-          <h2 className="font-bold">🧠 Mindmap</h2>
+          <div className="flex items-center gap-1">
+            <Brain className="w-4 h-4 text-primary" />
+            <h2 className="font-bold">Mindmap</h2>
+          </div>
           <div className="badge badge-outline">{nodes.length} nodes</div>
         </div>
 
         <div className="flex items-center gap-1">
-          <button onClick={() => zoom(1, { x: window.innerWidth / 2, y: window.innerHeight / 2 })} className="btn btn-sm btn-ghost" title="Zoom In">🔍+</button>
-          <button onClick={reset} className="btn btn-sm btn-ghost" title="Reset View">🏠</button>
-          <button onClick={() => zoom(-1, { x: window.innerWidth / 2, y: window.innerHeight / 2 })} className="btn btn-sm btn-ghost" title="Zoom Out">🔍-</button>
+          <button 
+            onClick={() => zoom(1, { x: window.innerWidth / 2, y: window.innerHeight / 2 })} 
+            className="btn btn-sm btn-ghost" 
+            title="Zoom In"
+          >
+            <ZoomIn className="w-4 h-4" />
+          </button>
+          <button 
+            onClick={reset} 
+            className="btn btn-sm btn-ghost" 
+            title="Reset View"
+          >
+            <Home className="w-4 h-4" />
+          </button>
+          <button 
+            onClick={() => zoom(-1, { x: window.innerWidth / 2, y: window.innerHeight / 2 })} 
+            className="btn btn-sm btn-ghost" 
+            title="Zoom Out"
+          >
+            <ZoomOut className="w-4 h-4" />
+          </button>
           <div className="divider divider-horizontal"></div>
           <input ref={fileRef} type="file" accept=".json" onChange={importData} className="hidden" />
-          <button onClick={() => fileRef.current?.click()} className="btn btn-sm btn-ghost" title="Import">📁</button>
-          <button onClick={exportData} className="btn btn-sm btn-ghost" title="Export">💾</button>
+          <button 
+            onClick={() => fileRef.current?.click()} 
+            className="btn btn-sm btn-ghost" 
+            title="Import"
+          >
+            <FolderOpen className="w-4 h-4" />
+          </button>
+          <button 
+            onClick={exportData} 
+            className="btn btn-sm btn-ghost" 
+            title="Export"
+          >
+            <Save className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
@@ -515,6 +586,7 @@ const Mindmap = () => {
         {nodes.length === 0 && (
           <div className="absolute inset-0 flex items-center justify-center text-base-content/50">
             <div className="text-center">
+              <Plus className="w-12 h-12 mx-auto mb-4 text-base-content/30" />
               <h3 className="text-xl font-semibold mb-2">Start Your Mindmap</h3>
               <p>Double-click anywhere to add your first idea</p>
             </div>
@@ -524,7 +596,8 @@ const Mindmap = () => {
         {/* Connection mode indicator */}
         {connectingFrom && (
           <div className="absolute top-4 left-1/2 -translate-x-1/2 alert alert-info shadow-lg max-w-md">
-            <span>🔗 Click another node to connect</span>
+            <Link className="w-4 h-4" />
+            <span>Click another node to connect</span>
           </div>
         )}
       </div>
