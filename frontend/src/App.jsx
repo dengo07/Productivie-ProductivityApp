@@ -293,7 +293,7 @@ function App() {
               <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
                 <span className="text-xl">🧠</span>
               </div>
-              <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-primary to-primary bg-clip-text text-transparent">
+              <h1 className="text-2xl md:text-3xl font-bold text-primary">
                 Productivie
               </h1>
             </div>
