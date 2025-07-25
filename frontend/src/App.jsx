@@ -1,5 +1,21 @@
 import React,{ useState, useCallback,useEffect,useRef,useMemo} from 'react';
 import { Rnd } from 'react-rnd';
+import { 
+  Target, 
+  Timer, 
+  CheckSquare, 
+  Trello, 
+  Brain, 
+  X, 
+  Ruler, 
+  Settings, 
+  Sun, 
+  Moon, 
+  Trash2, 
+  HelpCircle,
+  Hand,
+  Circle
+} from 'lucide-react';
 
 import { Analytics } from "@vercel/analytics/react"
 import PomodoroSection from './components/PomodoroSection';
@@ -176,7 +192,7 @@ const DraggableComponent =React.memo(({
         {/* Header with drag handle and controls */}
         <div className="drag-handle flex items-center justify-between p-2 sm:p-3 bg-gradient-to-r from-primary/10 to-secondary/10 border-b border-base-200 cursor-move">
           <div className="flex items-center space-x-2 min-w-0 flex-1">
-            <div className="w-2 h-2 rounded-full bg-primary opacity-60 flex-shrink-0"></div>
+            <Circle className="w-2 h-2 text-primary opacity-60 flex-shrink-0 fill-current" />
             <h2 className="text-sm sm:text-lg font-semibold text-base-content truncate">
               {component.title}
             </h2>
@@ -194,7 +210,7 @@ const DraggableComponent =React.memo(({
               className="btn btn-xs btn-ghost hover:btn-primary transition-colors"
               title="Toggle size"
             >
-              📏
+              <Ruler className="w-3 h-3" />
             </button>
             <button
               onClick={(e) => {
@@ -204,7 +220,7 @@ const DraggableComponent =React.memo(({
               className="btn btn-xs btn-ghost hover:btn-error transition-colors"
               title={`Remove ${component.title}`}
             >
-              ✕
+              <X className="w-3 h-3" />
             </button>
           </div>
         </div>
@@ -236,32 +252,32 @@ function WelcomeModal({ isOpen, onClose}) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <div className="bg-base-100 p-6 rounded-2xl shadow-2xl max-w-md mx-4 border border-base-300">
         <div className="text-center mb-6">
-          <div className="text-4xl mb-2">👋</div>
+          <Hand className="w-12 h-12 mx-auto mb-2 text-primary" />
           <h2 className="text-2xl font-bold text-base-content mb-2">Welcome to Productivie!</h2>
           <p className="text-base-content/70">Your customizable productivity workspace</p>
         </div>
         
         <div className="space-y-4 text-sm">
           <div className="flex items-start space-x-3">
-            <span className="text-lg">🍅</span>
+            <Timer className="w-5 h-5 text-secondary mt-0.5 flex-shrink-0" />
             <div>
               <strong>Pomodoro Timer:</strong> Work in focused 25-minute intervals with breaks
             </div>
           </div>
           <div className="flex items-start space-x-3">
-            <span className="text-lg">📋</span>
+            <CheckSquare className="w-5 h-5 text-accent mt-0.5 flex-shrink-0" />
             <div>
               <strong>Task Lists:</strong> Keep track of your to-dos and mark them complete
             </div>
           </div>
           <div className="flex items-start space-x-3">
-            <span className="text-lg">📊</span>
+            <Trello className="w-5 h-5 text-info mt-0.5 flex-shrink-0" />
             <div>
               <strong>Kanban Board:</strong> Organize tasks in columns (To Do, In Progress, Done)
             </div>
           </div>
           <div className="flex items-start space-x-3">
-            <span className="text-lg">🧠</span>
+            <Brain className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
             <div>
               <strong>Mind Maps:</strong> Create visual connections between ideas
             </div>
@@ -287,35 +303,35 @@ function ComponentPalette({ onAddComponent, theme, componentCount, maxComponents
     { 
       type: 'DailyFocus', 
       title: 'Daily Focus', 
-      icon: '🎯', 
+      icon: Target, 
       color: 'btn-primary',
       description: 'Set your main goal for today'
     },
     { 
       type: 'PomodoroSection', 
       title: 'Focus Timer', 
-      icon: '🍅', 
+      icon: Timer, 
       color: 'btn-secondary',
       description: '25-min work sessions with breaks'
     },
     { 
       type: 'TaskSection', 
       title: 'Task List', 
-      icon: '📋', 
+      icon: CheckSquare, 
       color: 'btn-accent',
       description: 'Simple to-do list with checkboxes'
     },
     { 
       type: 'KanbanBoard', 
       title: 'Project Board', 
-      icon: '📊', 
+      icon: Trello, 
       color: 'btn-info',
       description: 'Organize tasks in columns'
     },
     { 
       type: 'Mindmap', 
       title: 'Mind Map', 
-      icon: '🧠', 
+      icon: Brain, 
       color: 'btn-primary',
       description: 'Visual brainstorming tool'
     },
@@ -334,12 +350,15 @@ function ComponentPalette({ onAddComponent, theme, componentCount, maxComponents
       
       {isAtLimit && (
         <div className="mb-3 p-2 bg-warning/20 border border-warning/30 rounded-lg text-sm text-warning-content">
-          ⚠️ Maximum components reached. Remove some to add new ones.
+          <span className="inline-flex items-center gap-2">
+            <HelpCircle className="w-4 h-4" />
+            Maximum components reached. Remove some to add new ones.
+          </span>
         </div>
       )}
       
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
-        {components.map(({ type, title, icon, color, description }) => (
+        {components.map(({ type, title, icon: Icon, color, description }) => (
           <div key={type} className="space-y-2">
             <button
               onClick={() => onAddComponent(type)}
@@ -349,7 +368,7 @@ function ComponentPalette({ onAddComponent, theme, componentCount, maxComponents
               }`}
               title={`Add ${title}`}
             >
-              <span className="text-lg">{icon}</span>
+              <Icon className="w-4 h-4" />
               <span className="truncate">{title}</span>
             </button>
             <p className="text-xs text-base-content/60 text-center px-1">
@@ -588,7 +607,7 @@ function App() {
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-2 sm:space-x-3 min-w-0">
               <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center flex-shrink-0">
-                <span className="text-lg sm:text-xl">🧠</span>
+                <Brain className="w-4 h-4 sm:w-5 sm:h-5 text-primary-content" />
               </div>
               <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-primary truncate">
                 Productivie
@@ -606,7 +625,7 @@ function App() {
                   onClick={() => setShowWelcome(true)}
                   title="Help & Tour"
                 >
-                  <span className="text-sm sm:text-lg">❓</span>
+                  <HelpCircle className="w-3 h-3 sm:w-4 sm:h-4" />
                 </button>
               </HelpTooltip>
 
@@ -615,7 +634,7 @@ function App() {
                 onClick={() => setIsSettingsOpen(true)}
                 title="Open settings"
               >
-                <span className="text-sm sm:text-lg">⚙️</span>
+                <Settings className="w-3 h-3 sm:w-4 sm:h-4" />
                 <span className="hidden md:inline text-sm">Settings</span>
               </button>
               
@@ -624,7 +643,10 @@ function App() {
                 onClick={toggleTheme}
                 title="Toggle theme"
               >
-                <span className="text-sm sm:text-lg">{theme === 'night' ? '☀️' : '🌙'}</span>
+                {theme === 'night' ? 
+                  <Sun className="w-3 h-3 sm:w-4 sm:h-4" /> : 
+                  <Moon className="w-3 h-3 sm:w-4 sm:h-4" />
+                }
                 <span className="hidden md:inline text-sm">{theme === 'night' ? 'Light' : 'Dark'}</span>
               </button>
 
@@ -634,7 +656,7 @@ function App() {
                   onClick={clearWorkspace}
                   title="Clear workspace"
                 >
-                  <span className="text-sm sm:text-lg">🗑️</span>
+                  <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
                 </button>
               )}
             </div>
@@ -655,7 +677,7 @@ function App() {
           {activeComponents.length === 0 ? (
             <div className="absolute inset-0 flex items-center justify-center p-6">
               <div className="text-center max-w-md">
-                <div className="text-4xl sm:text-6xl mb-4 opacity-50">🎯</div>
+                <Target className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 text-base-content/50" />
                 <h3 className="text-lg sm:text-xl font-semibold text-base-content/60 mb-2">
                   Your workspace is empty
                 </h3>
@@ -702,7 +724,6 @@ function App() {
           onClose={() => setIsSettingsOpen(false)}
         />
       )}
-
       {/* Custom scrollbar styles with mobile optimization */}
       <style>{`
         .custom-scrollbar::-webkit-scrollbar {
