@@ -290,6 +290,7 @@ function App() {
       {/* Enhanced header */}
       <header className="sticky top-0 z-50 backdrop-blur-md bg-base-100/80 border-b border-base-300">
         <div className="container mx-auto px-6 py-4">
+          <Analytics/>
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
@@ -386,7 +387,7 @@ function App() {
           background: hsl(var(--bc) / 0.3);
         }
       `}</style>
-      <Analytics/>
+      
     </div>
   );
 }
