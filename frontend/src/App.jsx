@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import React,{ useState, useCallback,useEffect,useRef,useMemo} from 'react';
 import { Rnd } from 'react-rnd';
 
 import { Analytics } from "@vercel/analytics/react"
@@ -9,12 +9,82 @@ import DailyFocus from './components/DailyFocus';
 import KanbanBoard from './components/KanbanBoard';
 import Mindmap from './components/MindMap';
 
-function DraggableComponent({ component, children, onRemove, onUpdate, isSelected, onSelect }) {
+const DraggableComponent =React.memo(({ 
+  component, 
+  children, 
+  onRemove, 
+  onUpdate, 
+  isSelected, 
+  onSelect 
+}) => {
+  const [isDragging, setIsDragging] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
+  const dragStartRef = useRef(null);
+  const animationFrameRef = useRef(null);
+
+  // ✅ Throttled update function using RAF
+  const throttledUpdate = useCallback((id, updates) => {
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+    }
+    
+    animationFrameRef.current = requestAnimationFrame(() => {
+      onUpdate(id, updates);
+      animationFrameRef.current = null;
+    });
+  }, [onUpdate]);
+
+  const handleDragStart = useCallback((e) => {
+    setIsDragging(true);
+    dragStartRef.current = { x: e.clientX, y: e.clientY };
+    
+    // GPU layer oluştur
+    e.target.style.willChange = 'transform';
+  }, []);
+
+  const handleDrag = useCallback((e, d) => {
+    // Sadece büyük değişiklikler için update et (performance)
+    if (dragStartRef.current) {
+      const deltaX = Math.abs(e.clientX - dragStartRef.current.x);
+      const deltaY = Math.abs(e.clientY - dragStartRef.current.y);
+      
+      // 5px'den fazla hareket ettiyse update et
+      if (deltaX > 5 || deltaY > 5) {
+        throttledUpdate(component.id, { x: d.x, y: d.y });
+        dragStartRef.current = { x: e.clientX, y: e.clientY };
+      }
+    }
+  }, [component.id, throttledUpdate]);
+
   const handleDragStop = useCallback((e, d) => {
+    setIsDragging(false);
+    dragStartRef.current = null;
+    
+    // GPU layer temizle
+    e.target.style.willChange = 'auto';
+    
+    // Final pozisyonu kaydet
     onUpdate(component.id, { x: d.x, y: d.y });
   }, [component.id, onUpdate]);
 
+  const handleResizeStart = useCallback(() => {
+    setIsResizing(true);
+  }, []);
+
+  const handleResize = useCallback((e, direction, ref, delta, position) => {
+    // Resize sırasında throttle
+    throttledUpdate(component.id, {
+      width: ref.offsetWidth,
+      height: ref.offsetHeight,
+      x: position.x,
+      y: position.y,
+    });
+  }, [component.id, throttledUpdate]);
+
   const handleResizeStop = useCallback((e, direction, ref, delta, position) => {
+    setIsResizing(false);
+    
+    // Final boyutu kaydet
     onUpdate(component.id, {
       width: ref.offsetWidth,
       height: ref.offsetHeight,
@@ -25,55 +95,93 @@ function DraggableComponent({ component, children, onRemove, onUpdate, isSelecte
 
   const handleClick = useCallback((e) => {
     e.stopPropagation();
-    onSelect(component.id);
-  }, [component.id, onSelect]);
+    if (!isDragging && !isResizing) {
+      onSelect(component.id);
+    }
+  }, [component.id, onSelect, isDragging, isResizing]);
+
+  // ✅ Memoized styles
+  const containerStyle = useMemo(() => ({
+    transition: isDragging || isResizing ? 'none' : 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+    transform: `translateZ(0) ${isSelected ? 'scale(1.01)' : 'scale(1)'}`,
+    willChange: isDragging || isResizing ? 'transform' : 'auto',
+  }), [isDragging, isResizing, isSelected]);
+
+  const containerClasses = useMemo(() => [
+    'relative w-full h-full rounded-xl shadow-lg border overflow-hidden',
+    isDragging ? 'is-dragging' : '',
+    isSelected ? 'ring-2 ring-primary ring-opacity-60 border-primary bg-base-100 shadow-xl' 
+               : 'border-base-300 bg-base-100 hover:shadow-xl hover:border-base-400',
+    'transition-all duration-200'
+  ].filter(Boolean).join(' '), [isDragging, isSelected]);
+
+  // ✅ Optimize resize handles - sadece gerekli olanlar
+  const resizeHandles = useMemo(() => ({
+    top: false,
+    right: false,
+    bottom: false,
+    left: false,
+    topRight: false,
+    bottomRight: true, // Sadece sağ alt köşe
+    bottomLeft: false,
+    topLeft: false,
+  }), []);
+
+  const resizeHandleStyles = useMemo(() => ({
+    bottomRight: {
+      width: '12px',
+      height: '12px',
+      background: 'linear-gradient(-45deg, transparent 0%, transparent 40%, #64748b 40%, #64748b 60%, transparent 60%)',
+      cursor: 'nw-resize',
+    }
+  }), []);
+
+  // Cleanup on unmount
+  React.useEffect(() => {
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, []);
 
   return (
     <Rnd
       size={{ width: component.width, height: component.height }}
       position={{ x: component.x, y: component.y }}
+      onDragStart={handleDragStart}
+      onDrag={handleDrag}
       onDragStop={handleDragStop}
+      onResizeStart={handleResizeStart}
+      onResize={handleResize}
       onResizeStop={handleResizeStop}
       bounds="parent"
       minWidth={250}
       minHeight={180}
       dragHandleClassName="drag-handle"
       cancel=".rnd-cancel-drag"
-      enableResizing={{
-        top: true,
-        right: true,
-        bottom: true,
-        left: true,
-        topRight: true,
-        bottomRight: true,
-        bottomLeft: true,
-        topLeft: true,
-      }}
-      resizeHandleStyles={{
-        bottomRight: {
-          width: '12px',
-          height: '12px',
-          background: 'linear-gradient(-45deg, transparent 0%, transparent 40%, #64748b 40%, #64748b 60%, transparent 60%)',
-        }
-      }}
-      className={`transition-all duration-200 ${isSelected ? 'ring-2 ring-primary ring-opacity-60' : ''}`}
+      enableResizing={resizeHandles}
+      resizeHandleStyles={resizeHandleStyles}
+      style={containerStyle}
+      className="draggable-component"
+      // ✅ Performance optimizations
+      dragAxis="both"
+      resizeGrid={[1, 1]} // Grid snap devre dışı
+      dragGrid={[1, 1]}
     >
       <div
         onClick={handleClick}
-        className={`
-          relative w-full h-full rounded-xl shadow-lg border transition-all duration-200 overflow-hidden
-          ${isSelected 
-            ? 'border-primary bg-base-100 shadow-xl' 
-            : 'border-base-300 bg-base-100 hover:shadow-xl hover:border-base-400'
-          }
-        `}
+        className={containerClasses}
       >
         {/* Header with drag handle and controls */}
         <div className="drag-handle flex items-center justify-between p-3 bg-gradient-to-r from-primary/10 to-secondary/10 border-b border-base-200 cursor-move">
           <div className="flex items-center space-x-2">
             <div className="w-2 h-2 rounded-full bg-primary opacity-60"></div>
-            <h2 className="text-lg font-semibold text-base-content truncate">{component.title}</h2>
+            <h2 className="text-lg font-semibold text-base-content truncate">
+              {component.title}
+            </h2>
           </div>
+          
           <div className="flex items-center space-x-1">
             <button
               onClick={(e) => {
@@ -83,7 +191,7 @@ function DraggableComponent({ component, children, onRemove, onUpdate, isSelecte
                   height: component.height === 250 ? 350 : 250 
                 });
               }}
-              className="btn btn-xs btn-ghost hover:btn-primary"
+              className="btn btn-xs btn-ghost hover:btn-primary transition-colors"
               title="Toggle size"
             >
               📏
@@ -93,7 +201,7 @@ function DraggableComponent({ component, children, onRemove, onUpdate, isSelecte
                 e.stopPropagation();
                 onRemove(component.id);
               }}
-              className="btn btn-xs btn-ghost hover:btn-error"
+              className="btn btn-xs btn-ghost hover:btn-error transition-colors"
               title={`Remove ${component.title}`}
             >
               ✕
@@ -116,7 +224,10 @@ function DraggableComponent({ component, children, onRemove, onUpdate, isSelecte
       </div>
     </Rnd>
   );
-}
+});
+
+DraggableComponent.displayName = 'DraggableComponent';
+
 
 // Component palette for adding new components
 function ComponentPalette({ onAddComponent, theme }) {
