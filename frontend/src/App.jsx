@@ -37,6 +37,7 @@ function DraggableComponent({ component, children, onRemove, onUpdate, isSelecte
       minWidth={250}
       minHeight={180}
       dragHandleClassName="drag-handle"
+      cancel=".rnd-cancel-drag"
       enableResizing={{
         top: true,
         right: true,
