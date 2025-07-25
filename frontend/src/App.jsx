@@ -174,15 +174,15 @@ const DraggableComponent =React.memo(({
         className={containerClasses}
       >
         {/* Header with drag handle and controls */}
-        <div className="drag-handle flex items-center justify-between p-3 bg-gradient-to-r from-primary/10 to-secondary/10 border-b border-base-200 cursor-move">
-          <div className="flex items-center space-x-2">
-            <div className="w-2 h-2 rounded-full bg-primary opacity-60"></div>
-            <h2 className="text-lg font-semibold text-base-content truncate">
+        <div className="drag-handle flex items-center justify-between p-2 sm:p-3 bg-gradient-to-r from-primary/10 to-secondary/10 border-b border-base-200 cursor-move">
+          <div className="flex items-center space-x-2 min-w-0 flex-1">
+            <div className="w-2 h-2 rounded-full bg-primary opacity-60 flex-shrink-0"></div>
+            <h2 className="text-sm sm:text-lg font-semibold text-base-content truncate">
               {component.title}
             </h2>
           </div>
           
-          <div className="flex items-center space-x-1">
+          <div className="flex items-center space-x-1 flex-shrink-0">
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -210,7 +210,7 @@ const DraggableComponent =React.memo(({
         </div>
 
         {/* Content area */}
-        <div className="p-4 h-[calc(100%-4rem)] overflow-auto custom-scrollbar">
+        <div className="p-2 sm:p-4 h-[calc(100%-3rem)] sm:h-[calc(100%-4rem)] overflow-auto custom-scrollbar">
           {children}
         </div>
 
@@ -228,33 +228,159 @@ const DraggableComponent =React.memo(({
 
 DraggableComponent.displayName = 'DraggableComponent';
 
+// Welcome Modal for first-time users
+function WelcomeModal({ isOpen, onClose}) {
+  if (!isOpen) return null;
 
-// Component palette for adding new components
-function ComponentPalette({ onAddComponent, theme }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <div className="bg-base-100 p-6 rounded-2xl shadow-2xl max-w-md mx-4 border border-base-300">
+        <div className="text-center mb-6">
+          <div className="text-4xl mb-2">👋</div>
+          <h2 className="text-2xl font-bold text-base-content mb-2">Welcome to Productivie!</h2>
+          <p className="text-base-content/70">Your customizable productivity workspace</p>
+        </div>
+        
+        <div className="space-y-4 text-sm">
+          <div className="flex items-start space-x-3">
+            <span className="text-lg">🍅</span>
+            <div>
+              <strong>Pomodoro Timer:</strong> Work in focused 25-minute intervals with breaks
+            </div>
+          </div>
+          <div className="flex items-start space-x-3">
+            <span className="text-lg">📋</span>
+            <div>
+              <strong>Task Lists:</strong> Keep track of your to-dos and mark them complete
+            </div>
+          </div>
+          <div className="flex items-start space-x-3">
+            <span className="text-lg">📊</span>
+            <div>
+              <strong>Kanban Board:</strong> Organize tasks in columns (To Do, In Progress, Done)
+            </div>
+          </div>
+          <div className="flex items-start space-x-3">
+            <span className="text-lg">🧠</span>
+            <div>
+              <strong>Mind Maps:</strong> Create visual connections between ideas
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-6 space-y-2">
+          <button
+            onClick={onClose}
+            className="btn btn-ghost w-full"
+          >
+            I'll Figure It Out
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Component palette with limits and better descriptions
+function ComponentPalette({ onAddComponent, theme, componentCount, maxComponents = 8 }) {
   const components = [
-    { type: 'DailyFocus', title: 'Daily Focus', icon: '🎯', color: 'btn-primary' },
-    { type: 'PomodoroSection', title: 'Pomodoro Timer', icon: '🍅', color: 'btn-secondary' },
-    { type: 'TaskSection', title: 'Task List', icon: '📋', color: 'btn-accent' },
-    { type: 'KanbanBoard', title: 'Kanban Board', icon: '📊', color: 'btn-info' },
-    { type: 'Mindmap', title: 'Mindmap', icon: '🧠', color: 'btn-primary' },
+    { 
+      type: 'DailyFocus', 
+      title: 'Daily Focus', 
+      icon: '🎯', 
+      color: 'btn-primary',
+      description: 'Set your main goal for today'
+    },
+    { 
+      type: 'PomodoroSection', 
+      title: 'Focus Timer', 
+      icon: '🍅', 
+      color: 'btn-secondary',
+      description: '25-min work sessions with breaks'
+    },
+    { 
+      type: 'TaskSection', 
+      title: 'Task List', 
+      icon: '📋', 
+      color: 'btn-accent',
+      description: 'Simple to-do list with checkboxes'
+    },
+    { 
+      type: 'KanbanBoard', 
+      title: 'Project Board', 
+      icon: '📊', 
+      color: 'btn-info',
+      description: 'Organize tasks in columns'
+    },
+    { 
+      type: 'Mindmap', 
+      title: 'Mind Map', 
+      icon: '🧠', 
+      color: 'btn-primary',
+      description: 'Visual brainstorming tool'
+    },
   ];
+
+  const isAtLimit = componentCount >= maxComponents;
 
   return (
     <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-base-200 to-base-300 border border-base-300">
-      <h3 className="text-lg font-semibold mb-3 text-base-content">Add Components</h3>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-        {components.map(({ type, title, icon, color }) => (
-          <button
-            key={type}
-            onClick={() => onAddComponent(type)}
-            className={`btn btn-sm ${color} gap-2 transition-all duration-200 hover:scale-105`}
-            title={`Add ${title}`}
-          >
-            <span className="text-lg">{icon}</span>
-            <span className="hidden sm:inline">{title}</span>
-          </button>
+      <div className="flex justify-between items-center mb-3">
+        <h3 className="text-lg font-semibold text-base-content">Add Productivity Tools</h3>
+        <div className="text-sm text-base-content/60">
+          {componentCount}/{maxComponents} components
+        </div>
+      </div>
+      
+      {isAtLimit && (
+        <div className="mb-3 p-2 bg-warning/20 border border-warning/30 rounded-lg text-sm text-warning-content">
+          ⚠️ Maximum components reached. Remove some to add new ones.
+        </div>
+      )}
+      
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+        {components.map(({ type, title, icon, color, description }) => (
+          <div key={type} className="space-y-2">
+            <button
+              onClick={() => onAddComponent(type)}
+              disabled={isAtLimit}
+              className={`btn btn-sm ${color} w-full gap-2 transition-all duration-200 hover:scale-105 ${
+                isAtLimit ? 'btn-disabled opacity-50' : ''
+              }`}
+              title={`Add ${title}`}
+            >
+              <span className="text-lg">{icon}</span>
+              <span className="truncate">{title}</span>
+            </button>
+            <p className="text-xs text-base-content/60 text-center px-1">
+              {description}
+            </p>
+          </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+// Help tooltip component
+function HelpTooltip({ children, content }) {
+  const [isVisible, setIsVisible] = useState(false);
+
+  return (
+    <div className="relative inline-block">
+      <div
+        onMouseEnter={() => setIsVisible(true)}
+        onMouseLeave={() => setIsVisible(false)}
+        className="cursor-help"
+      >
+        {children}
+      </div>
+      {isVisible && (
+        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-base-300 text-base-content text-sm rounded-lg shadow-lg whitespace-nowrap z-50 border border-base-200">
+          {content}
+          <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-base-300"></div>
+        </div>
+      )}
     </div>
   );
 }
@@ -276,6 +402,8 @@ function App() {
   const [taskInput, setTaskInput] = useState('');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [selectedComponent, setSelectedComponent] = useState(null);
+  const [showWelcome, setShowWelcome] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
   const [activeComponents, setActiveComponents] = useState([
     { 
@@ -290,7 +418,7 @@ function App() {
     { 
       id: 'pomodoro', 
       type: 'PomodoroSection', 
-      title: 'Pomodoro Timer', 
+      title: 'Focus Timer', 
       x: 400, 
       y: 100, 
       width: 340, 
@@ -307,32 +435,76 @@ function App() {
     },
   ]);
 
+  // Check if user is new
+  useEffect(() => {
+    const hasVisited = localStorage.getItem('productivie-visited');
+    if (!hasVisited) {
+      setShowWelcome(true);
+      localStorage.setItem('productivie-visited', 'true');
+    }
+  }, []);
+
+  // Handle responsive design
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Auto-arrange components on mobile
+  useEffect(() => {
+    if (isMobile && activeComponents.length > 0) {
+      const mobileArrangedComponents = activeComponents.map((component, index) => ({
+        ...component,
+        x: 10,
+        y: 10 + (index * 320),
+        width: Math.min(component.width, window.innerWidth - 40),
+        height: component.height
+      }));
+      setActiveComponents(mobileArrangedComponents);
+    }
+  }, [isMobile]);
+
   const toggleTheme = useCallback(() => {
     setTheme((prev) => (prev === 'retro' ? 'night' : 'retro'));
   }, []);
 
   const addComponent = useCallback((type) => {
+    // Prevent adding too many components
+    if (activeComponents.length >= 8) {
+      return;
+    }
+
     const titleMap = {
       DailyFocus: 'Daily Focus',
-      PomodoroSection: 'Pomodoro Timer',
+      PomodoroSection: 'Focus Timer',
       TaskSection: 'Task List',
-      KanbanBoard: 'Kanban Board',
-      MindMap: 'Mindmap',
+      KanbanBoard: 'Project Board',
+      Mindmap: 'Mind Map',
     };
+
+    // Check if component already exists (prevent duplicates of certain types)
+    const existingTypes = activeComponents.map(c => c.type);
+    if (['DailyFocus'].includes(type) && existingTypes.includes(type)) {
+      return; // Prevent duplicate daily focus
+    }
 
     const newComponent = {
       id: `${type}-${Date.now()}`,
       type,
       title: titleMap[type] || type,
-      x: Math.random() * 100 + 100,
-      y: Math.random() * 100 + 150,
-      width: 320,
+      x: isMobile ? 10 : Math.random() * 100 + 100,
+      y: isMobile ? (activeComponents.length * 320) + 10 : Math.random() * 100 + 150,
+      width: isMobile ? Math.min(320, window.innerWidth - 40) : 320,
       height: 280,
     };
 
     setActiveComponents((prev) => [...prev, newComponent]);
     setSelectedComponent(newComponent.id);
-  }, []);
+  }, [activeComponents, isMobile]);
 
   const removeComponent = useCallback((id) => {
     setActiveComponents((prev) => prev.filter((comp) => comp.id !== id));
@@ -351,15 +523,27 @@ function App() {
     setSelectedComponent(null);
   }, []);
 
+  const startTour = useCallback(() => {
+    setShowWelcome(false);
+    // You could implement a proper tour library here
+    alert("Tour functionality would be implemented with a library like Intro.js or React Joyride!");
+  }, []);
+
+  const clearWorkspace = useCallback(() => {
+    if (confirm('Are you sure you want to remove all components? This cannot be undone.')) {
+      setActiveComponents([]);
+      setSelectedComponent(null);
+    }
+  }, []);
+
   const renderComponent = useCallback((component) => {
-    // Corrected: Pass key directly, and then spread other props
     switch (component.type) {
       case 'DailyFocus':
         return <DailyFocus key={component.id} isDark={theme === 'night'} />;
       case 'PomodoroSection':
         return (
           <PomodoroSection
-            key={component.id} // Key passed directly
+            key={component.id}
             mode={mode}
             setMode={setMode}
             isRunning={isRunning}
@@ -375,7 +559,7 @@ function App() {
       case 'TaskSection':
         return (
           <TaskSection
-            key={component.id} // Key passed directly
+            key={component.id}
             tasks={tasks}
             setTasks={setTasks}
             taskInput={taskInput}
@@ -387,71 +571,103 @@ function App() {
       case 'Mindmap':
         return <Mindmap key={component.id} isDark={theme === 'night'} />;
       default:
-        return <div key={component.id}>Unknown component type</div>; // Always provide a key if rendering a list
+        return <div key={component.id}>Unknown component type</div>;
     }
   }, [theme, mode, setMode, isRunning, setIsRunning, settings, completedPomodoros, setCompletedPomodoros, pomodoroKey, setPomodoroKey, tasks, setTasks, taskInput, setTaskInput]);
 
   return (
-    
     <div 
       data-theme={theme} 
       className="min-h-screen bg-gradient-to-br from-base-200 via-base-100 to-base-200 transition-all duration-500"
       onClick={handleBackgroundClick}
     >
-      {/* Enhanced header */}
+      {/* Enhanced header with better mobile support */}
       <header className="sticky top-0 z-50 backdrop-blur-md bg-base-100/80 border-b border-base-300">
-        <div className="container mx-auto px-6 py-4">
+        <div className="container mx-auto px-4 sm:px-6 py-3 sm:py-4">
           <Analytics/>
           <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
-                <span className="text-xl">🧠</span>
+            <div className="flex items-center space-x-2 sm:space-x-3 min-w-0">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center flex-shrink-0">
+                <span className="text-lg sm:text-xl">🧠</span>
               </div>
-              <h1 className="text-2xl md:text-3xl font-bold text-primary">
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-primary truncate">
                 Productivie
               </h1>
             </div>
             
-            <div className="flex items-center space-x-2">
-              <div className="badge badge-outline">
-                {activeComponents.length} components
+            <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
+              <div className="badge badge-outline text-xs hidden sm:flex">
+                {activeComponents.length}/8
               </div>
+              
+              <HelpTooltip content="Need help? Click for a quick tour!">
+                <button
+                  className="btn btn-xs sm:btn-sm btn-ghost"
+                  onClick={() => setShowWelcome(true)}
+                  title="Help & Tour"
+                >
+                  <span className="text-sm sm:text-lg">❓</span>
+                </button>
+              </HelpTooltip>
+
               <button
-                className="btn btn-sm btn-ghost gap-2"
+                className="btn btn-xs sm:btn-sm btn-ghost"
                 onClick={() => setIsSettingsOpen(true)}
                 title="Open settings"
               >
-                <span className="text-lg">⚙️</span>
-                <span className="hidden sm:inline">Settings</span>
+                <span className="text-sm sm:text-lg">⚙️</span>
+                <span className="hidden md:inline text-sm">Settings</span>
               </button>
+              
               <button
-                className="btn btn-sm btn-ghost gap-2"
+                className="btn btn-xs sm:btn-sm btn-ghost"
                 onClick={toggleTheme}
                 title="Toggle theme"
               >
-                <span className="text-lg">{theme === 'night' ? '☀️' : '🌙'}</span>
-                <span className="hidden sm:inline">{theme === 'night' ? 'Light' : 'Dark'}</span>
+                <span className="text-sm sm:text-lg">{theme === 'night' ? '☀️' : '🌙'}</span>
+                <span className="hidden md:inline text-sm">{theme === 'night' ? 'Light' : 'Dark'}</span>
               </button>
+
+              {activeComponents.length > 0 && (
+                <button
+                  className="btn btn-xs sm:btn-sm btn-ghost hover:btn-error"
+                  onClick={clearWorkspace}
+                  title="Clear workspace"
+                >
+                  <span className="text-sm sm:text-lg">🗑️</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
       </header>
 
-      <div className="container mx-auto px-6 py-6">
-        <ComponentPalette onAddComponent={addComponent} theme={theme} />
+      <div className="container mx-auto px-4 sm:px-6 py-4 sm:py-6">
+        <ComponentPalette 
+          onAddComponent={addComponent} 
+          theme={theme} 
+          componentCount={activeComponents.length}
+          maxComponents={8}
+        />
 
-        {/* Workspace area */}
-        <div className="relative min-h-[2000px] rounded-2xl bg-base-50 border-2 border-dashed border-base-300 overflow-hidden">
+        {/* Workspace area with better mobile handling */}
+        <div className={`relative ${isMobile ? 'min-h-screen' : 'min-h-[2000px]'} rounded-2xl bg-base-50 border-2 border-dashed border-base-300 overflow-hidden`}>
           {activeComponents.length === 0 ? (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-center">
-                <div className="text-6xl mb-4 opacity-50">🎯</div>
-                <h3 className="text-xl font-semibold text-base-content/60 mb-2">
+            <div className="absolute inset-0 flex items-center justify-center p-6">
+              <div className="text-center max-w-md">
+                <div className="text-4xl sm:text-6xl mb-4 opacity-50">🎯</div>
+                <h3 className="text-lg sm:text-xl font-semibold text-base-content/60 mb-2">
                   Your workspace is empty
                 </h3>
-                <p className="text-base-content/40">
-                  Add components from the palette above to get started
+                <p className="text-sm sm:text-base text-base-content/40 mb-4">
+                  Add productivity tools from the palette above to get started
                 </p>
+                <button
+                  onClick={() => setShowWelcome(true)}
+                  className="btn btn-sm btn-primary"
+                >
+                  Show me how it works
+                </button>
               </div>
             </div>
           ) : (
@@ -471,6 +687,13 @@ function App() {
         </div>
       </div>
 
+      {/* Welcome Modal */}
+      <WelcomeModal
+        isOpen={showWelcome}
+        onClose={() => setShowWelcome(false)}
+        onStartTour={startTour}
+      />
+
       {/* Settings Modal */}
       {isSettingsOpen && (
         <SettingsModal
@@ -480,25 +703,68 @@ function App() {
         />
       )}
 
-      {/* Custom scrollbar styles */}
-      {/* Corrected: Removed the 'jsx' attribute */}
+      {/* Custom scrollbar styles with mobile optimization */}
       <style>{`
         .custom-scrollbar::-webkit-scrollbar {
-          width: 6px;
-          height: 6px;
+          width: 4px;
+          height: 4px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
           background: transparent;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
           background: hsl(var(--bc) / 0.2);
-          border-radius: 3px;
+          border-radius: 2px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
           background: hsl(var(--bc) / 0.3);
         }
+
+        @media (max-width: 768px) {
+          .draggable-component .react-draggable {
+            touch-action: none;
+          }
+          
+          .btn-xs {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+          }
+        }
+
+        .container {
+          max-width: 100%;
+        }
+
+        @media (min-width: 640px) {
+          .container {
+            max-width: 640px;
+          }
+        }
+
+        @media (min-width: 768px) {
+          .container {
+            max-width: 768px;
+          }
+        }
+
+        @media (min-width: 1024px) {
+          .container {
+            max-width: 1024px;
+          }
+        }
+
+        @media (min-width: 1280px) {
+          .container {
+            max-width: 1280px;
+          }
+        }
+
+        @media (min-width: 1536px) {
+          .container {
+            max-width: 1536px;
+          }
+        }
       `}</style>
-      
     </div>
   );
 }
