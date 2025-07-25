@@ -26,8 +26,8 @@ const TaskItem = ({
   const textColorClass = task.done
     ? 'text-gray-400' 
     : isDark
-    ? 'text-gray-200'
-    : 'text-gray-800'; 
+    ? 'text-primary'
+    : 'text-primary'; 
 
 
   const backgroundColorClass = isDark ? 'bg-base-200' : 'bg-base-100';
