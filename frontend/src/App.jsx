@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { Rnd } from 'react-rnd';
 
-import { Analytics } from "@vercel/analytics/next"
+import { Analytics } from "@vercel/analytics/react"
 import PomodoroSection from './components/PomodoroSection';
 import TaskSection from './components/TaskSection';
 import SettingsModal from './components/SettingsModal';
