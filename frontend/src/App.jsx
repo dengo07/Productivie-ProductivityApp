@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { Rnd } from 'react-rnd';
 
+import { Analytics } from "@vercel/analytics/next"
 import PomodoroSection from './components/PomodoroSection';
 import TaskSection from './components/TaskSection';
 import SettingsModal from './components/SettingsModal';
@@ -280,6 +281,7 @@ function App() {
   }, [theme, mode, setMode, isRunning, setIsRunning, settings, completedPomodoros, setCompletedPomodoros, pomodoroKey, setPomodoroKey, tasks, setTasks, taskInput, setTaskInput]);
 
   return (
+    
     <div 
       data-theme={theme} 
       className="min-h-screen bg-gradient-to-br from-base-200 via-base-100 to-base-200 transition-all duration-500"
@@ -384,6 +386,7 @@ function App() {
           background: hsl(var(--bc) / 0.3);
         }
       `}</style>
+      <Analytics/>
     </div>
   );
 }
