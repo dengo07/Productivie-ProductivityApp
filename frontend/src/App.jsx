@@ -63,6 +63,12 @@ const DraggableComponent = React.memo(({ component, children, onRemove, onUpdate
       onResizeStart={() => setIsResizing(true)}
       onResize={handleResize}
       onResizeStop={() => setIsResizing(false)}
+      onTouchStart={(e) => e.stopPropagation()}
+      onTouchEnd={(e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        // button action
+      }}
       bounds="parent"
       minWidth={250}
       minHeight={180}
@@ -80,6 +86,7 @@ const DraggableComponent = React.memo(({ component, children, onRemove, onUpdate
       style={containerStyle}
     >
       <div
+      
         onClick={handleClick}
         className={`relative w-full h-full rounded-xl shadow-lg border transition-all duration-200 overflow-hidden ${
           isSelected 
@@ -88,7 +95,7 @@ const DraggableComponent = React.memo(({ component, children, onRemove, onUpdate
         }`}
       >
         {/* Header */}
-        <div className="drag-handle flex items-center justify-between p-2 sm:p-3 bg-gradient-to-r from-primary/10 to-secondary/10 border-b border-base-200 cursor-move">
+        <div className="drag-handle flex items-center justify-between p-2 sm:p-3 bg-gradient-to-r from-primary/10 to-secondary/10 border-b border-base-200 cursor-move relative z-10">
           <div className="flex items-center space-x-2 min-w-0 flex-1">
             <Circle className="w-2 h-2 text-primary opacity-60 fill-current flex-shrink-0" />
             <h2 className="text-sm sm:text-lg font-semibold text-base-content truncate">
@@ -105,7 +112,8 @@ const DraggableComponent = React.memo(({ component, children, onRemove, onUpdate
                   height: component.height === 250 ? 350 : 250 
                 });
               }}
-              className="btn btn-xs btn-ghost hover:btn-primary transition-colors"
+              className="btn btn-sm btn-ghost hover:btn-primary transition-colors min-h-[44px] min-w-[44px]"
+
               title="Toggle size"
             >
               <Ruler className="w-3 h-3" />
@@ -115,7 +123,8 @@ const DraggableComponent = React.memo(({ component, children, onRemove, onUpdate
                 e.stopPropagation();
                 onRemove(component.id);
               }}
-              className="btn btn-xs btn-ghost hover:btn-error transition-colors"
+              className="btn btn-sm btn-ghost hover:btn-primary transition-colors min-h-[44px] min-w-[44px]"
+
               title={`Remove ${component.title}`}
             >
               <X className="w-3 h-3" />
