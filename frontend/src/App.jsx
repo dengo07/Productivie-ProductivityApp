@@ -494,9 +494,10 @@ function App() {
           componentCount={activeComponents.length}
           maxComponents={8}
         />
-
-        {/* Workspace area */}
-        <div className={`relative ${isMobile ? 'min-h-[500vh]' : 'min-h-[500vh]'} rounded-xl sm:rounded-2xl bg-base-50 border-2 border-dashed border-base-300 overflow-hidden`}>
+      </div>
+      {/* Workspace area */}
+        <div className="px-3 sm:px-6">
+          <div className={`relative w-full ${isMobile ? 'min-h-[500vh]' : 'min-h-[500vh]'} rounded-xl sm:rounded-2xl bg-base-50 border-2 border-dashed border-base-300 overflow-hidden`}>
           {activeComponents.length === 0 ? (
             <div className="absolute inset-0 flex items-center justify-center p-4 sm:p-6">
               <div className="text-center max-w-md">
@@ -531,7 +532,6 @@ function App() {
           )}
         </div>
       </div>
-
       {/* Welcome Modal */}
       <WelcomeModal
         isOpen={showWelcome}
