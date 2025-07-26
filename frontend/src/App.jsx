@@ -95,7 +95,7 @@ const DraggableComponent = React.memo(({ component, children, onRemove, onUpdate
         }`}
       >
         {/* Header */}
-        <div className="drag-handle flex items-center justify-between p-2 sm:p-3 bg-gradient-to-r from-primary/10 to-secondary/10 border-b border-base-200 cursor-move relative z-10">
+        <div className="drag-handle flex items-center justify-between p-0 sm:p-1 bg-gradient-to-r from-primary/10 to-secondary/10 border-b border-base-200 cursor-move relative z-10">
           <div className="flex items-center space-x-2 min-w-0 flex-1">
             <Circle className="w-2 h-2 text-primary opacity-60 fill-current flex-shrink-0" />
             <h2 className="text-sm sm:text-lg font-semibold text-base-content truncate">
