@@ -78,6 +78,22 @@ const SettingsModal = ({ settings, setSettings, onClose }) => {
           </div>
         </div>
 
+        {/* Buy Me Coffee Section */}
+        <div className="divider"></div>
+        <div className="text-center py-2">
+          <p className="text-sm text-gray-600 mb-3">
+            If this app helps you stay productive, consider supporting me! ☕
+          </p>
+          <a
+            href="https://buymeacoffee.com/dengobey"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn btn-warning btn-sm gap-2"
+          >
+            ☕ Buy me a coffee
+          </a>
+        </div>
+
         <div className="modal-action">
           <button className="btn btn-outline" onClick={onClose}>
             Cancel
