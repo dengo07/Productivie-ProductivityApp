@@ -596,7 +596,7 @@ function App() {
       <div className="px-3 sm:px-6">
         <div className={`relative w-full ${isMobile ? 'min-h-[500vh]' : 'min-h-[500vh]'} rounded-xl sm:rounded-2xl bg-base-50 border-2 border-dashed border-base-300 overflow-hidden`}>
           {activeComponents.length === 0 ? (
-            <div className="absolute inset-0 flex items-center justify-center p-4 sm:p-6">
+            <div className="absolute inset-0 flex items-start justify-center p-4 sm:p-6">
               <div className="text-center max-w-md">
                 <Target className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 text-base-content/50" />
                 <h3 className="text-lg sm:text-xl font-semibold text-base-content/60 mb-2">
