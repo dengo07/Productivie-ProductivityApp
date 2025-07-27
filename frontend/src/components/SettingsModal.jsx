@@ -81,7 +81,7 @@ const SettingsModal = ({ settings, setSettings, onClose }) => {
         {/* Buy Me Coffee Section */}
         <div className="divider"></div>
         <div className="text-center py-2">
-          <p className="text-sm text-gray-600 mb-3">
+          <p className="text-sm text-tertiary">
             If this app helps you stay productive, consider supporting me! ☕
           </p>
           <a
