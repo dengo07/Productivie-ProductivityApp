@@ -208,7 +208,7 @@ function App() {
   const [isWorkspaceModalOpen, setIsWorkspaceModalOpen] = useState(false);
 
   const [activeComponents, setActiveComponents] = useState([
-    { id: 'tasks', type: 'TaskSection', title: 'Task List', x: 50, y: 350, width: 320, height: 300 },
+    { id: 'tasks', type: 'TaskSection', title: 'Task List', x: 50, y: 150, width: 320, height: 300 },
   ]);
 
   // Initialize workspace manager
