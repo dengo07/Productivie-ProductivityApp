@@ -31,7 +31,7 @@ const Timer = ({ mode, settings, onComplete, onToggle, isRunning, timerKey }) =>
 
   useEffect(() => {
     const modeName = mode.replace('_', ' ');
-    document.title = `${formatTime(timeLeft)} - ${modeName.charAt(0).toUpperCase() + modeName.slice(1)}`;
+    //document.title = `${formatTime(timeLeft)} - ${modeName.charAt(0).toUpperCase() + modeName.slice(1)}`;
   }, [timeLeft, mode]);
 
   const resetTimer = () => {
