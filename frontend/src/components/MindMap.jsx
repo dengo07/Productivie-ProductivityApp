@@ -100,7 +100,7 @@ const Node = ({ node, isSelected, isConnecting, onAction }) => {
   const nodeStyles = {
     root: 'bg-primary text-primary-content border-primary scale-105',
     main: 'bg-secondary text-secondary-content border-secondary',
-    sub: 'bg-base-100 text-base-content border-base-300',
+    sub:  'bg-accent text-secondary-content border-base-300',
   };
 
   const getNodeIcon = (type) => {
