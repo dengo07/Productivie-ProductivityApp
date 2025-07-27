@@ -1,8 +1,8 @@
-import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import { Rnd } from 'react-rnd';
+import { useState, useCallback, useEffect,} from 'react';
 import { 
-  Target, Timer, CheckSquare, Trello, Brain, X, Ruler, Settings, 
-  Sun, Moon, Trash2, HelpCircle, Hand, Circle
+  Target, Brain, Settings, 
+  Sun, Moon, Trash2, HelpCircle, Save, FolderOpen,
+ 
 } from 'lucide-react';
 
 import { Analytics } from "@vercel/analytics/react"
@@ -12,231 +12,137 @@ import SettingsModal from './components/SettingsModal';
 import DailyFocus from './components/DailyFocus';
 import KanbanBoard from './components/KanbanBoard';
 import Mindmap from './components/MindMap';
+import WorkspaceModal from './components/WorkspaceModal';
+import DraggableComponent from './components/DraggableComponent';
+import ComponentPalette from './components/ComponentPalette';
+import WelcomeModal from './components/WelcomeModal';
 
-const DraggableComponent = React.memo(({ component, children, onRemove, onUpdate, isSelected, onSelect }) => {
-  const [isDragging, setIsDragging] = useState(false);
-  const [isResizing, setIsResizing] = useState(false);
-  const animationFrameRef = useRef(null);
+// Workspace Management Hook - FIXED VERSION
+const useWorkspaceManager = () => {
+  // Initialize with localStorage data immediately
+  const [savedWorkspaces, setSavedWorkspaces] = useState(() => {
+    try {
+      const saved = localStorage.getItem('productivie-workspaces');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      console.error('Failed to load workspaces:', e);
+      return [];
+    }
+  });
+  
+  const [currentWorkspaceName, setCurrentWorkspaceName] = useState('');
+  const [isLoaded, setIsLoaded] = useState(true); // Since we load immediately
 
-  const throttledUpdate = useCallback((id, updates) => {
-    if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-    animationFrameRef.current = requestAnimationFrame(() => {
-      onUpdate(id, updates);
-      animationFrameRef.current = null;
+  // Save workspaces to localStorage whenever they change
+  useEffect(() => {
+    try {
+      localStorage.setItem('productivie-workspaces', JSON.stringify(savedWorkspaces));
+    } catch (e) {
+      console.error('Failed to save workspaces:', e);
+    }
+  }, [savedWorkspaces]);
+
+  const saveWorkspace = useCallback((name, workspaceData) => {
+    const newWorkspace = {
+      id: Date.now().toString(),
+      name,
+      data: workspaceData,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    setSavedWorkspaces(prev => {
+      const existing = prev.find(ws => ws.name === name);
+      if (existing) {
+        return prev.map(ws => ws.name === name ? 
+          { ...newWorkspace, id: existing.id, createdAt: existing.createdAt } : ws
+        );
+      }
+      return [...prev, newWorkspace];
     });
-  }, [onUpdate]);
 
-  const handleDrag = useCallback((e, d) => {
-    throttledUpdate(component.id, { x: d.x, y: d.y });
-  }, [component.id, throttledUpdate]);
-
-  const handleResize = useCallback((e, direction, ref, delta, position) => {
-    throttledUpdate(component.id, {
-      width: ref.offsetWidth,
-      height: ref.offsetHeight,
-      x: position.x,
-      y: position.y,
-    });
-  }, [component.id, throttledUpdate]);
-
-  const handleClick = useCallback((e) => {
-    e.stopPropagation();
-    if (!isDragging && !isResizing) onSelect(component.id);
-  }, [component.id, onSelect, isDragging, isResizing]);
-
-  const containerStyle = useMemo(() => ({
-    transition: isDragging || isResizing ? 'none' : 'all 0.2s ease',
-    transform: `translateZ(0) ${isSelected ? 'scale(1.01)' : 'scale(1)'}`,
-  }), [isDragging, isResizing, isSelected]);
-
-  useEffect(() => () => {
-    if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+    setCurrentWorkspaceName(name);
+    return true;
   }, []);
 
-  return (
-    <Rnd
-      size={{ width: component.width, height: component.height }}
-      position={{ x: component.x, y: component.y }}
-      onDragStart={() => setIsDragging(true)}
-      onDrag={handleDrag}
-      onDragStop={() => setIsDragging(false)}
-      onResizeStart={() => setIsResizing(true)}
-      onResize={handleResize}
-      onResizeStop={() => setIsResizing(false)}
-      onTouchStart={(e) => e.stopPropagation()}
-      onTouchEnd={(e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        // button action
-      }}
-      bounds="parent"
-      minWidth={250}
-      minHeight={180}
-      dragHandleClassName="drag-handle"
-      cancel=".rnd-cancel-drag"
-      enableResizing={{ bottomRight: true }}
-      resizeHandleStyles={{
-        bottomRight: {
-          width: '12px',
-          height: '12px',
-          background: 'linear-gradient(-45deg, transparent 0%, transparent 40%, #64748b 40%, #64748b 60%, transparent 60%)',
-          cursor: 'nw-resize',
+  const loadWorkspace = useCallback((workspaceId) => {
+    const workspace = savedWorkspaces.find(ws => ws.id === workspaceId);
+    if (workspace) {
+      setCurrentWorkspaceName(workspace.name);
+      return workspace.data;
+    }
+    return null;
+  }, [savedWorkspaces]);
+
+  const deleteWorkspace = useCallback((workspaceId) => {
+    setSavedWorkspaces(prev => prev.filter(ws => ws.id !== workspaceId));
+    
+    // If deleted workspace was the current one, clear current name
+    const deletedWorkspace = savedWorkspaces.find(ws => ws.id === workspaceId);
+    if (deletedWorkspace && deletedWorkspace.name === currentWorkspaceName) {
+      setCurrentWorkspaceName('');
+      // Clear last workspace from localStorage
+      try {
+        localStorage.removeItem('productivie-last-workspace');
+      } catch (e) {
+        console.error('Failed to remove last workspace:', e);
+      }
+    }
+  }, [savedWorkspaces, currentWorkspaceName]);
+
+  const exportWorkspace = useCallback((workspaceData, name = 'workspace') => {
+    const exportData = {
+      name,
+      data: workspaceData,
+      exportedAt: new Date().toISOString(),
+      version: '1.0'
+    };
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { 
+      type: 'application/json' 
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_workspace.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, []);
+
+  const importWorkspace = useCallback((file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const importData = JSON.parse(e.target.result);
+          if (importData.data && importData.name) {
+            resolve(importData);
+          } else {
+            reject(new Error('Invalid workspace file format'));
+          }
+        } catch (error) {
+          reject(new Error('Failed to parse workspace file'));
         }
-      }}
-      style={containerStyle}
-    >
-      <div
-      
-        onClick={handleClick}
-        className={`relative w-full h-full rounded-xl shadow-lg border transition-all duration-200 overflow-hidden ${
-          isSelected 
-            ? 'ring-2 ring-primary border-primary bg-base-100 shadow-xl' 
-            : 'border-base-300 bg-base-100 hover:shadow-xl hover:border-base-400'
-        }`}
-      >
-        {/* Header */}
-        <div className="drag-handle flex items-center justify-between p-0 sm:p-1 bg-gradient-to-r from-primary/10 to-secondary/10 border-b border-base-200 cursor-move relative z-10">
-          <div className="flex items-center space-x-2 min-w-0 flex-1">
-            <Circle className="w-2 h-2 text-primary opacity-60 fill-current flex-shrink-0" />
-            <h2 className="text-sm sm:text-lg font-semibold text-base-content truncate">
-              {component.title}
-            </h2>
-          </div>
-          
-          <div className="flex items-center space-x-1 flex-shrink-0">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onUpdate(component.id, { 
-                  width: component.width === 300 ? 400 : 300,
-                  height: component.height === 250 ? 350 : 250 
-                });
-              }}
-              className="btn btn-xs btn-ghost hover:btn-primary transition-colors"
+      };
+      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.readAsText(file);
+    });
+  }, []);
 
-              title="Toggle size"
-            >
-              <Ruler className="w-3 h-3" />
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onRemove(component.id);
-              }}
-              className="btn btn-xs btn-ghost hover:btn-primary transition-colors"
-
-              title={`Remove ${component.title}`}
-            >
-              <X className="w-3 h-3" />
-            </button>
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="p-2 sm:p-4 h-[calc(100%-3rem)] sm:h-[calc(100%-4rem)] overflow-auto custom-scrollbar">
-          {children}
-        </div>
-
-        {/* Resize indicator */}
-        <div className="absolute bottom-0 right-0 w-4 h-4 opacity-40 pointer-events-none">
-          <svg viewBox="0 0 12 12" className="w-full h-full text-base-content">
-            <path d="M12 12L8 12L12 8Z" fill="currentColor" opacity="0.3"/>
-            <path d="M12 12L4 12L12 4Z" fill="currentColor" opacity="0.2"/>
-          </svg>
-        </div>
-      </div>
-    </Rnd>
-  );
-});
-
-DraggableComponent.displayName = 'DraggableComponent';
-
-function WelcomeModal({ isOpen, onClose }) {
-  if (!isOpen) return null;
-
-  const features = [
-    { icon: Timer, title: "Pomodoro Timer", desc: "Work in focused 25-minute intervals with breaks" },
-    { icon: CheckSquare, title: "Task Lists", desc: "Keep track of your to-dos and mark them complete" },
-    { icon: Trello, title: "Kanban Board", desc: "Organize tasks in columns (To Do, In Progress, Done)" },
-    { icon: Brain, title: "Mind Maps", desc: "Create visual connections between ideas" }
-  ];
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-base-100 p-4 sm:p-6 rounded-2xl shadow-2xl max-w-md mx-4 border border-base-300">
-        <div className="text-center mb-4 sm:mb-6">
-          <Hand className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-2 text-primary" />
-          <h2 className="text-xl sm:text-2xl font-bold text-base-content mb-2">Welcome to Productivie!</h2>
-          <p className="text-sm text-base-content/70">Your customizable productivity workspace</p>
-        </div>
-        
-        <div className="space-y-3 sm:space-y-4 text-sm">
-          {features.map(({ icon: Icon, title, desc }) => (
-            <div key={title} className="flex items-start space-x-3">
-              <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-secondary mt-0.5 flex-shrink-0" />
-              <div><strong>{title}:</strong> {desc}</div>
-            </div>
-          ))}
-        </div>
-
-        <button onClick={onClose} className="btn btn-ghost w-full mt-4 sm:mt-6">
-          I'll Figure It Out
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function ComponentPalette({ onAddComponent, componentCount, maxComponents = 8 }) {
-  const components = [
-    { type: 'DailyFocus', title: 'Daily Focus', icon: Target, color: 'btn-primary', desc: 'Set your main goal for today' },
-    { type: 'PomodoroSection', title: 'Focus Timer', icon: Timer, color: 'btn-secondary', desc: '25-min work sessions with breaks' },
-    { type: 'TaskSection', title: 'Task List', icon: CheckSquare, color: 'btn-accent', desc: 'Simple to-do list with checkboxes' },
-    { type: 'KanbanBoard', title: 'Project Board', icon: Trello, color: 'btn-info', desc: 'Organize tasks in columns' },
-    { type: 'Mindmap', title: 'Mind Map', icon: Brain, color: 'btn-primary', desc: 'Visual brainstorming tool' },
-  ];
-
-  const isAtLimit = componentCount >= maxComponents;
-
-  return (
-    <div className="mb-4 sm:mb-6 p-3 sm:p-4 rounded-xl bg-gradient-to-r from-base-200 to-base-300 border border-base-300">
-      <div className="flex justify-between items-center mb-3">
-        <h3 className="text-base sm:text-lg font-semibold text-base-content">Add Productivity Tools</h3>
-        <div className="text-xs sm:text-sm text-base-content/60">{componentCount}/{maxComponents} components</div>
-      </div>
-      
-      {isAtLimit && (
-        <div className="mb-3 p-2 bg-warning/20 border border-warning/30 rounded-lg text-xs sm:text-sm text-warning-content">
-          <span className="inline-flex items-center gap-2">
-            <HelpCircle className="w-4 h-4" />
-            Maximum components reached. Remove some to add new ones.
-          </span>
-        </div>
-      )}
-      
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2 sm:gap-3">
-        {components.map(({ type, title, icon: Icon, color, desc }) => (
-          <div key={type} className="space-y-1 sm:space-y-2">
-            <button
-              onClick={() => onAddComponent(type)}
-              disabled={isAtLimit}
-              className={`btn btn-sm ${color} w-full gap-1 sm:gap-2 transition-all duration-200 hover:scale-105 ${
-                isAtLimit ? 'btn-disabled opacity-50' : ''
-              }`}
-              title={`Add ${title}`}
-            >
-              <Icon className="w-3 h-3 sm:w-4 sm:h-4" />
-              <span className="truncate text-xs sm:text-sm">{title}</span>
-            </button>
-            <p className="text-xs text-base-content/60 text-center px-1 hidden sm:block">
-              {desc}
-            </p>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
+  return {
+    savedWorkspaces,
+    currentWorkspaceName,
+    setCurrentWorkspaceName,
+    saveWorkspace,
+    loadWorkspace,
+    deleteWorkspace,
+    exportWorkspace,
+    importWorkspace,
+    isLoaded
+  };
+};
 
 function HelpTooltip({ children, content }) {
   const [isVisible, setIsVisible] = useState(false);
@@ -263,12 +169,31 @@ function HelpTooltip({ children, content }) {
 function App() {
   // All original state variables preserved
   const [tasks, setTasks] = useState([]);
-  const [theme, setTheme] = useState('retro');
-  const [settings, setSettings] = useState({
-    pomodoro: 25 * 60,
-    short_break: 5 * 60,
-    long_break: 15 * 60,
-    longBreakInterval: 4,
+  const [theme, setTheme] = useState(() => {
+    try {
+      return localStorage.getItem('productivie-theme') || 'retro';
+    } catch (e) {
+      return 'retro';
+    }
+  });
+  
+  const [settings, setSettings] = useState(() => {
+    try {
+      const saved = localStorage.getItem('productivie-settings');
+      return saved ? JSON.parse(saved) : {
+        pomodoro: 25 * 60,
+        short_break: 5 * 60,
+        long_break: 15 * 60,
+        longBreakInterval: 4,
+      };
+    } catch (e) {
+      return {
+        pomodoro: 25 * 60,
+        short_break: 5 * 60,
+        long_break: 15 * 60,
+        longBreakInterval: 4,
+      };
+    }
   });
 
   const [mode, setMode] = useState('pomodoro');
@@ -280,6 +205,7 @@ function App() {
   const [selectedComponent, setSelectedComponent] = useState(null);
   const [showWelcome, setShowWelcome] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [isWorkspaceModalOpen, setIsWorkspaceModalOpen] = useState(false);
 
   const [activeComponents, setActiveComponents] = useState([
     { id: 'dailyFocus', type: 'DailyFocus', title: 'Daily Focus', x: 50, y: 100, width: 320, height: 220 },
@@ -287,12 +213,84 @@ function App() {
     { id: 'tasks', type: 'TaskSection', title: 'Task List', x: 50, y: 350, width: 320, height: 300 },
   ]);
 
+  // Initialize workspace manager
+  const {
+    savedWorkspaces,
+    currentWorkspaceName,
+    setCurrentWorkspaceName,
+    saveWorkspace,
+    loadWorkspace,
+    deleteWorkspace,
+    exportWorkspace,
+    importWorkspace,
+    isLoaded
+  } = useWorkspaceManager();
+
+  // Save theme to localStorage when it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem('productivie-theme', theme);
+    } catch (e) {
+      console.error('Failed to save theme:', e);
+    }
+  }, [theme]);
+
+  // Save settings to localStorage when they change
+  useEffect(() => {
+    try {
+      localStorage.setItem('productivie-settings', JSON.stringify(settings));
+    } catch (e) {
+      console.error('Failed to save settings:', e);
+    }
+  }, [settings]);
+
+  // Auto-save current workspace
+  useEffect(() => {
+    const autoSaveInterval = setInterval(() => {
+      if (currentWorkspaceName) {
+        const workspaceData = {
+          activeComponents,
+          tasks,
+          theme,
+          settings,
+          mode,
+          completedPomodoros,
+          taskInput
+        };
+        saveWorkspace(currentWorkspaceName, workspaceData);
+      }
+    }, 30000); // Auto-save every 30 seconds
+
+    return () => clearInterval(autoSaveInterval);
+  }, [currentWorkspaceName, activeComponents, tasks, theme, settings, mode, completedPomodoros, taskInput, saveWorkspace]);
+
+  // Load last used workspace on mount - FIXED
+  useEffect(() => {
+    if (isLoaded && savedWorkspaces.length > 0) {
+      try {
+        const lastWorkspace = localStorage.getItem('productivie-last-workspace');
+        if (lastWorkspace) {
+          const workspace = savedWorkspaces.find(ws => ws.id === lastWorkspace);
+          if (workspace) {
+            handleLoadWorkspace(workspace.id);
+          }
+        }
+      } catch (e) {
+        console.error('Failed to load last workspace:', e);
+      }
+    }
+  }, [isLoaded, savedWorkspaces]);
+
   // Check if user is new
   useEffect(() => {
-    const hasVisited = localStorage.getItem('productivie-visited');
-    if (!hasVisited) {
-      setShowWelcome(true);
-      localStorage.setItem('productivie-visited', 'true');
+    try {
+      const hasVisited = localStorage.getItem('productivie-visited');
+      if (!hasVisited) {
+        setShowWelcome(true);
+        localStorage.setItem('productivie-visited', 'true');
+      }
+    } catch (e) {
+      console.error('Failed to check visit status:', e);
     }
   }, []);
 
@@ -376,8 +374,89 @@ function App() {
     if (confirm('Are you sure you want to remove all components? This cannot be undone.')) {
       setActiveComponents([]);
       setSelectedComponent(null);
+      setCurrentWorkspaceName('');
+      try {
+        localStorage.removeItem('productivie-last-workspace');
+      } catch (e) {
+        console.error('Failed to remove last workspace:', e);
+      }
     }
-  }, []);
+  }, [setCurrentWorkspaceName]);
+
+  // Workspace management functions - FIXED
+  const handleSaveWorkspace = useCallback((name, data = null) => {
+    const workspaceData = data || {
+      activeComponents,
+      tasks,
+      theme,
+      settings,
+      mode,
+      completedPomodoros,
+      taskInput
+    };
+    
+    const success = saveWorkspace(name, workspaceData);
+    if (success) {
+      // Find the workspace ID after saving
+      const workspace = savedWorkspaces.find(ws => ws.name === name) || 
+                       { id: Date.now().toString() }; // Fallback
+      try {
+        localStorage.setItem('productivie-last-workspace', workspace.id);
+      } catch (e) {
+        console.error('Failed to save last workspace:', e);
+      }
+    }
+    return success;
+  }, [activeComponents, tasks, theme, settings, mode, completedPomodoros, taskInput, saveWorkspace, savedWorkspaces]);
+
+  const handleLoadWorkspace = useCallback((workspaceId) => {
+    const workspaceData = loadWorkspace(workspaceId);
+    if (workspaceData) {
+      setActiveComponents(workspaceData.activeComponents || []);
+      setTasks(workspaceData.tasks || []);
+      setTheme(workspaceData.theme || 'retro');
+      setSettings(workspaceData.settings || {
+        pomodoro: 25 * 60,
+        short_break: 5 * 60,
+        long_break: 15 * 60,
+        longBreakInterval: 4,
+      });
+      setMode(workspaceData.mode || 'pomodoro');
+      setCompletedPomodoros(workspaceData.completedPomodoros || 0);
+      setTaskInput(workspaceData.taskInput || '');
+      setSelectedComponent(null);
+      
+      try {
+        localStorage.setItem('productivie-last-workspace', workspaceId);
+      } catch (e) {
+        console.error('Failed to save last workspace:', e);
+      }
+    }
+  }, [loadWorkspace]);
+
+  const handleExportWorkspace = useCallback(() => {
+    const workspaceData = {
+      activeComponents,
+      tasks,
+      theme,
+      settings,
+      mode,
+      completedPomodoros,
+      taskInput
+    };
+    
+    const exportName = currentWorkspaceName || 'my_workspace';
+    exportWorkspace(workspaceData, exportName);
+  }, [activeComponents, tasks, theme, settings, mode, completedPomodoros, taskInput, currentWorkspaceName, exportWorkspace]);
+
+  const handleImportWorkspace = useCallback(async (file) => {
+    try {
+      const importData = await importWorkspace(file);
+      return importData;
+    } catch (error) {
+      throw error;
+    }
+  }, [importWorkspace]);
 
   const renderComponent = useCallback((component) => {
     switch (component.type) {
@@ -433,15 +512,32 @@ function App() {
               <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center flex-shrink-0">
                 <Brain className="w-4 h-4 sm:w-5 sm:h-5 text-primary-content" />
               </div>
-              <h1 className="text-lg sm:text-2xl md:text-3xl font-bold text-primary truncate">
-                Productivie
-              </h1>
+              <div className="min-w-0">
+                <h1 className="text-lg sm:text-2xl md:text-3xl font-bold text-primary truncate">
+                  Productivie
+                </h1>
+                {currentWorkspaceName && (
+                  <p className="text-xs text-base-content/60 truncate">
+                    {currentWorkspaceName}
+                  </p>
+                )}
+              </div>
             </div>
             
             <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
               <div className="badge badge-outline text-xs hidden sm:flex">
                 {activeComponents.length}/8
               </div>
+
+              {/* Workspace Management Button */}
+              <button
+                className="btn btn-xs sm:btn-sm btn-ghost"
+                onClick={() => setIsWorkspaceModalOpen(true)}
+                title="Manage workspaces"
+              >
+                <Save className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden lg:inline text-sm">Workspace</span>
+              </button>
               
               <HelpTooltip content="Need help? Click for a quick tour!">
                 <button
@@ -495,9 +591,10 @@ function App() {
           maxComponents={8}
         />
       </div>
+
       {/* Workspace area */}
-        <div className="px-3 sm:px-6">
-          <div className={`relative w-full ${isMobile ? 'min-h-[500vh]' : 'min-h-[500vh]'} rounded-xl sm:rounded-2xl bg-base-50 border-2 border-dashed border-base-300 overflow-hidden`}>
+      <div className="px-3 sm:px-6">
+        <div className={`relative w-full ${isMobile ? 'min-h-[500vh]' : 'min-h-[500vh]'} rounded-xl sm:rounded-2xl bg-base-50 border-2 border-dashed border-base-300 overflow-hidden`}>
           {activeComponents.length === 0 ? (
             <div className="absolute inset-0 flex items-center justify-center p-4 sm:p-6">
               <div className="text-center max-w-md">
@@ -506,14 +603,23 @@ function App() {
                   Your workspace is empty
                 </h3>
                 <p className="text-sm sm:text-base text-base-content/40 mb-4">
-                  Add productivity tools from the palette above to get started
+                  Add productivity tools from the palette above to get started, or load a saved workspace
                 </p>
-                <button
-                  onClick={() => setShowWelcome(true)}
-                  className="btn btn-sm btn-primary"
-                >
-                  Show me how it works
-                </button>
+                <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                  <button
+                    onClick={() => setShowWelcome(true)}
+                    className="btn btn-sm btn-primary"
+                  >
+                    Show me how it works
+                  </button>
+                  <button
+                    onClick={() => setIsWorkspaceModalOpen(true)}
+                    className="btn btn-sm btn-ghost"
+                  >
+                    <FolderOpen className="w-4 h-4 mr-2" />
+                    Load Workspace
+                  </button>
+                </div>
               </div>
             </div>
           ) : (
@@ -532,6 +638,7 @@ function App() {
           )}
         </div>
       </div>
+
       {/* Welcome Modal */}
       <WelcomeModal
         isOpen={showWelcome}
@@ -546,6 +653,19 @@ function App() {
           onClose={() => setIsSettingsOpen(false)}
         />
       )}
+
+      {/* Workspace Management Modal */}
+      <WorkspaceModal
+        isOpen={isWorkspaceModalOpen}
+        onClose={() => setIsWorkspaceModalOpen(false)}
+        onSave={handleSaveWorkspace}
+        onLoad={handleLoadWorkspace}
+        onDelete={deleteWorkspace}
+        onExport={handleExportWorkspace}
+        onImport={handleImportWorkspace}
+        savedWorkspaces={savedWorkspaces}
+        currentWorkspaceName={currentWorkspaceName}
+      />
 
       {/* Custom styles */}
       <style>{`
