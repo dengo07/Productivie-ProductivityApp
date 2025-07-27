@@ -208,8 +208,6 @@ function App() {
   const [isWorkspaceModalOpen, setIsWorkspaceModalOpen] = useState(false);
 
   const [activeComponents, setActiveComponents] = useState([
-    { id: 'dailyFocus', type: 'DailyFocus', title: 'Daily Focus', x: 50, y: 100, width: 320, height: 220 },
-    { id: 'pomodoro', type: 'PomodoroSection', title: 'Focus Timer', x: 400, y: 100, width: 340, height: 280 },
     { id: 'tasks', type: 'TaskSection', title: 'Task List', x: 50, y: 350, width: 320, height: 300 },
   ]);
 
