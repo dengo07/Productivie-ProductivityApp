@@ -99,7 +99,7 @@ const DraggableComponent = React.memo(({ component, children, onRemove, onUpdate
                   height: component.height === 250 ? 350 : 250 
                 });
               }}
-              // DEĞİŞİKLİK: onTouchStart kaldırıldı ve sürüklemeyi iptal eden sınıf eklendi
+              
               className="rnd-cancel-drag btn btn-xs btn-ghost hover:btn-primary transition-colors"
               title="Toggle size"
             >
@@ -110,7 +110,7 @@ const DraggableComponent = React.memo(({ component, children, onRemove, onUpdate
                 e.stopPropagation();
                 onRemove(component.id);
               }}
-              // DEĞİŞİKLİK: onTouchStart kaldırıldı ve sürüklemeyi iptal eden sınıf eklendi
+              
               className="rnd-cancel-drag btn btn-xs btn-ghost hover:btn-primary transition-colors"
               title={`Remove ${component.title}`}
             >

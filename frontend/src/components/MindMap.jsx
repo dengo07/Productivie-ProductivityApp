@@ -123,7 +123,7 @@ const Node = ({ node, isSelected, isConnecting, onAction }) => {
 
   const handleMouseDown = useCallback((e) => {
     if (isEditing) return;
-    e.stopPropagation(); // Prevent canvas pan when clicking on a node
+    e.stopPropagation(); 
     onAction('select', node.id, e.shiftKey);
     onAction('dragStart', node.id, { clientX: e.clientX, clientY: e.clientY }); // Pass clientX/Y
   }, [node.id, isEditing, onAction]);
