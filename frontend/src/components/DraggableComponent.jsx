@@ -99,6 +99,15 @@ const DraggableComponent = React.memo(({ component, children, onRemove, onUpdate
                   width: component.width === 300 ? 400 : 300,
                   height: component.height === 250 ? 350 : 250 
                 });
+                
+              }}
+              ontouchstart = {(e) => {
+                e.stopPropagation();
+                onUpdate(component.id, { 
+                  width: component.width === 300 ? 400 : 300,
+                  height: component.height === 250 ? 350 : 250 
+                });
+                
               }}
               className="btn btn-xs btn-ghost hover:btn-primary transition-colors"
               title="Toggle size"
@@ -107,6 +116,10 @@ const DraggableComponent = React.memo(({ component, children, onRemove, onUpdate
             </button>
             <button
               onClick={(e) => {
+                e.stopPropagation();
+                onRemove(component.id);
+              }}
+              ontouchstart = {(e) => {
                 e.stopPropagation();
                 onRemove(component.id);
               }}
