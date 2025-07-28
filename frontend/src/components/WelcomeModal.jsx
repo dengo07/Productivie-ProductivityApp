@@ -24,7 +24,7 @@ function WelcomeModal({ isOpen, onClose }) {
         <div className="space-y-3 sm:space-y-4 text-sm">
           {features.map(({ icon: Icon, title, desc }) => (
             <div key={title} className="flex items-start space-x-3">
-              <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-secondary mt-0.5 flex-shrink-0" />
+              <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-accent mt-0.5 flex-shrink-0" />
               <div><strong>{title}:</strong> {desc}</div>
             </div>
           ))}
