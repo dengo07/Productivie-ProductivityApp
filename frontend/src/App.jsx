@@ -257,7 +257,7 @@ function App() {
         };
         saveWorkspace(currentWorkspaceName, workspaceData);
       }
-    }, 30000); // Auto-save every 30 seconds
+    }, 20000); // Auto-save every 20 seconds
 
     return () => clearInterval(autoSaveInterval);
   }, [currentWorkspaceName, activeComponents, tasks, theme, settings, mode, completedPomodoros, taskInput, saveWorkspace]);
@@ -592,7 +592,7 @@ function App() {
 
       {/* Workspace area */}
       <div className="px-3 sm:px-6">
-        <div className={`relative w-full ${isMobile ? 'min-h-[500vh]' : 'min-h-[500vh]'} rounded-xl sm:rounded-2xl bg-base-50 border-2 border-dashed border-base-300 overflow-hidden`}>
+        <div className={`relative w-full ${isMobile ? 'min-h-[500vh]' : 'min-h-[500vh]'} rounded-xl sm:rounded-2xl bg-base-50 border-2 border-dashed ${theme === "night" ? 'border-secondary':'border-accent'}  overflow-hidden`}>
           {activeComponents.length === 0 ? (
             <div className="absolute inset-0 flex items-start justify-center p-4 sm:p-6">
               <div className="text-center max-w-md">
@@ -672,7 +672,7 @@ function App() {
           height: 4px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
-          background: transparent;
+          background: #808080;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
           background: hsl(var(--bc) / 0.2);
@@ -692,6 +692,7 @@ function App() {
             font-size: 0.75rem;
           }
         }
+
 
         .container {
           max-width: 100%;
