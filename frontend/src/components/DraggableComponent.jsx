@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { Circle, Ruler, X } from 'lucide-react';
 import { Rnd } from 'react-rnd';
@@ -62,7 +61,7 @@ const DraggableComponent = React.memo(({ component, children, onRemove, onUpdate
       minWidth={250}
       minHeight={180}
       dragHandleClassName="drag-handle"
-      cancel=".rnd-cancel-drag"
+      cancel=".rnd-cancel-drag" // Bu sınıf sürüklemeyi iptal eder
       enableResizing={{ bottomRight: true }}
       resizeHandleStyles={{
         bottomRight: {
@@ -99,17 +98,9 @@ const DraggableComponent = React.memo(({ component, children, onRemove, onUpdate
                   width: component.width === 300 ? 400 : 300,
                   height: component.height === 250 ? 350 : 250 
                 });
-                
               }}
-              ontouchstart = {(e) => {
-                e.stopPropagation();
-                onUpdate(component.id, { 
-                  width: component.width === 300 ? 400 : 300,
-                  height: component.height === 250 ? 350 : 250 
-                });
-                
-              }}
-              className="btn btn-xs btn-ghost hover:btn-primary transition-colors"
+              // DEĞİŞİKLİK: onTouchStart kaldırıldı ve sürüklemeyi iptal eden sınıf eklendi
+              className="rnd-cancel-drag btn btn-xs btn-ghost hover:btn-primary transition-colors"
               title="Toggle size"
             >
               <Ruler className="w-3 h-3" />
@@ -119,11 +110,8 @@ const DraggableComponent = React.memo(({ component, children, onRemove, onUpdate
                 e.stopPropagation();
                 onRemove(component.id);
               }}
-              ontouchstart = {(e) => {
-                e.stopPropagation();
-                onRemove(component.id);
-              }}
-              className="btn btn-xs btn-ghost hover:btn-primary transition-colors"
+              // DEĞİŞİKLİK: onTouchStart kaldırıldı ve sürüklemeyi iptal eden sınıf eklendi
+              className="rnd-cancel-drag btn btn-xs btn-ghost hover:btn-primary transition-colors"
               title={`Remove ${component.title}`}
             >
               <X className="w-3 h-3" />
@@ -132,7 +120,7 @@ const DraggableComponent = React.memo(({ component, children, onRemove, onUpdate
         </div>
 
         {/* Content */}
-        <div className="p-2 sm:p-4 h-[calc(100%-3rem)] sm:h-[calc(100%-4rem)] overflow-auto custom-scrollbar">
+        <div className="p-2 sm:p-4 h-[calc(100%-2.25rem)] sm:h-[calc(100%-2.5rem)] overflow-auto custom-scrollbar">
           {children}
         </div>
 
