@@ -111,7 +111,7 @@ function LandingPage() {
             <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-secondary/20 rounded-2xl blur-2xl transform rotate-6" />
             <div className="relative bg-gradient-to-br from-base-200 to-base-300 p-4 sm:p-8 rounded-2xl shadow-2xl border border-primary/20">
               <img
-                src="hero-sec-photo.png"
+                src="hero-sec-photo.webp"
                 className="w-full max-w-sm sm:max-w-md rounded-xl shadow-xl hover:scale-105 transition-transform duration-500" // `w-full` ve `max-w-sm` eklendi
                 alt="Productivity workspace"
               />
