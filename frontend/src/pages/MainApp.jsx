@@ -171,9 +171,9 @@ function MainApp() {
   const [tasks, setTasks] = useState([]);
   const [theme, setTheme] = useState(() => {
     try {
-      return localStorage.getItem('productivie-theme') || 'retro';
+      return localStorage.getItem('productivie-theme') || 'lofi';
     } catch (e) {
-      return 'retro';
+      return 'lofi';
     }
   });
   
@@ -317,7 +317,7 @@ function MainApp() {
   }, [isMobile]);
 
   const toggleTheme = useCallback(() => {
-    setTheme((prev) => (prev === 'retro' ? 'night' : 'retro'));
+    setTheme((prev) => (prev === 'lofi' ? 'night' : 'lofi'));
   }, []);
 
   const addComponent = useCallback((type) => {
@@ -412,7 +412,7 @@ function MainApp() {
     if (workspaceData) {
       setActiveComponents(workspaceData.activeComponents || []);
       setTasks(workspaceData.tasks || []);
-      setTheme(workspaceData.theme || 'retro');
+      setTheme(workspaceData.theme || 'lofi');
       setSettings(workspaceData.settings || {
         pomodoro: 25 * 60,
         short_break: 5 * 60,

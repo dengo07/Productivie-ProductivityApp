@@ -38,7 +38,7 @@ function LandingPage() {
   }, []);
 
   const toggleTheme = () => {
-    setTheme(prev => prev === "retro" ? "night" : "retro");
+    setTheme(prev => prev === "lofi" ? "night" : "lofi");
   };
 
   return (
