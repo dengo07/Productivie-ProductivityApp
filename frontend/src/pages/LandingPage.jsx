@@ -98,7 +98,7 @@ function LandingPage() {
           >
             <Rocket className="w-5 h-5 group-hover:animate-bounce" />
             <span className="hidden sm:inline">Launch App</span>
-            <span className="sm:hidden">Launch</span> {/* Mobil için daha kısa metin */}
+            <span className="sm:hidden">Launch</span> 
           </a>
         </div>
       </div>
