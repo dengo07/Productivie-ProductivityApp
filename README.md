@@ -25,6 +25,9 @@ Welcome to **Productivie**, a fully customizable, lightweight, and elegant produ
 ![Screenshot](https://github.com/dengo07/Productivity-Site/blob/main/public/screenshot.png)
 
 ---
+## 📄 License
+
+This project is licensed under the GNU General Public License v3.0 — see the [LICENSE](LICENSE) file for details.
 
 ## 🚀 Getting Started
 
@@ -43,6 +46,3 @@ npm install
 # 4. Start the development server
 npm run dev
 
-## 📄 License
-
-This project is licensed under the GNU General Public License v3.0 — see the [LICENSE](LICENSE) file for details.
