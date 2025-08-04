@@ -61,7 +61,7 @@ const DraggableComponent = React.memo(({ component, children, onRemove, onUpdate
       minWidth={250}
       minHeight={180}
       dragHandleClassName="drag-handle"
-      cancel=".rnd-cancel-drag" // Bu sınıf sürüklemeyi iptal eder
+      cancel=".rnd-cancel-drag" 
       enableResizing={{ bottomRight: true }}
       resizeHandleStyles={{
         bottomRight: {

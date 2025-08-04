@@ -308,21 +308,18 @@ const Mindmap = () => {
     setDragState(null);
   }, []);
 
-  // Canvas interactions
+
   const handleCanvasMouseDown = useCallback((e) => {
-    // Only start panning if the click is directly on the canvas and not a node
-    if (e.target === canvasRef.current || e.target.closest('svg')) { // Added e.target.closest('svg') to allow panning by clicking on the SVG background
+    if (e.target === canvasRef.current || e.target.closest('svg')) { 
       setDragState({ type: 'canvas', startX: e.clientX, startY: e.clientY });
-      clear(); // Clear selection when starting to pan the canvas
+      clear(); 
     }
   }, [canvasRef, clear]);
 
   const handleCanvasClick = useCallback((e) => {
     if (e.target === canvasRef.current || e.target.closest('svg')) {
-      // This is now handled by handleCanvasMouseDown clearing selection
-      // if (dragState?.type !== 'node') clear(); // Only clear if not dragging a node
     }
-  }, [canvasRef]); // Removed clear from dependency as it's handled in handleCanvasMouseDown
+  }, [canvasRef]); 
 
   const handleCanvasDoubleClick = useCallback((e) => {
     if (e.target === canvasRef.current || e.target.closest('svg')) {

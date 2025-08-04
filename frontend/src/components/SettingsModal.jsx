@@ -1,6 +1,5 @@
 import { useState } from 'react';
 
-// COMPONENT: SettingsModal
 const SettingsModal = ({ settings, setSettings, onClose }) => {
   const [localSettings, setLocalSettings] = useState(settings);
 

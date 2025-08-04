@@ -6,7 +6,7 @@ function LandingPage() {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isVisible, setIsVisible] = useState(false);
 
-  // Topluluğumuza Katılın bölümü - Daha sonra kullanılmak üzere tanımlandı
+ 
   const joinOurCom = (
     <div className="bg-gradient-to-r from-primary/10 to-secondary/10 p-8 rounded-3xl border border-primary/20">
       <h3 className="text-3xl md:text-4xl font-bold mb-4">Join Our Community</h3>
@@ -17,7 +17,7 @@ function LandingPage() {
         <input 
           type="email" 
           placeholder="Enter your email" 
-          className="input input-bordered input-lg w-full max-w-xs" // Mobil için tam genişlik
+          className="input input-bordered input-lg w-full max-w-xs" 
         />
         <button className="btn btn-primary btn-lg hover:scale-105 transition-transform duration-300 w-full sm:w-auto">
           Subscribe

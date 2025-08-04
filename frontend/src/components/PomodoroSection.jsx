@@ -11,15 +11,13 @@ const PomodoroSection = ({
   pomodoroKey,
   setPomodoroKey,
 }) => {
-  // Zil sesi için bir Audio nesnesi oluşturuyoruz
-  // Ses dosyasının projenizin public klasöründe olduğundan emin olun,
-  // veya uygun bir yola sahip olduğundan.
+  
   const alarmSound = new Audio("mixkit-achievement-bell-600.wav"); 
 
   const handleTimerComplete = () => {
     setIsRunning(false);
 
-    // Zamanlayıcı bittiğinde zil sesini çal
+
     alarmSound.play();
 
     if (mode === "pomodoro") {

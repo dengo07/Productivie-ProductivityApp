@@ -1,7 +1,5 @@
 import { useState } from 'react';
 
-// COMPONENT: TaskItem
-
 const TaskItem = ({
   task,
   index,
