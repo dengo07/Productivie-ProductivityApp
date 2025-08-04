@@ -2,7 +2,7 @@
 @import "tailwindcss";
 @plugin "daisyui" {
 
-   themes: lofi, night;
+   themes: retro, night;
 
  }
 
