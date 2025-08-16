@@ -22,7 +22,6 @@ Welcome to **Productivie**, a fully customizable, lightweight, and elegant produ
 
 🔗 [Live Preview](https://productivie.com)
 
-![Screenshot](https://github.com/dengo07/Productivity-Site/blob/main/public/screenshot.png)
 
 ---
 ## 📄 License
