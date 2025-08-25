@@ -215,6 +215,27 @@ const Mindmap = ({ data, onDataChange }) => {
   const { view, canvasRef, screenToCanvas, zoom, pan, reset } = useViewport();
   const { selectedIds, connectingFrom, setConnectingFrom, select, clear } = useSelection();
 
+  // Calculate dynamic SVG bounds
+  const calculateSVGBounds = useCallback(() => {
+    if (!nodes.length) return { width: 2000, height: 2000, minX: -1000, minY: -1000 };
+    
+    const padding = 500;
+    const minX = Math.min(...nodes.map(n => n.x)) - padding;
+    const maxX = Math.max(...nodes.map(n => n.x)) + padding;
+    const minY = Math.min(...nodes.map(n => n.y)) - padding;
+    const maxY = Math.max(...nodes.map(n => n.y)) + padding;
+    
+    return {
+      width: maxX - minX,
+      height: maxY - minY,
+      minX,
+      minY
+    };
+  }, [nodes]);
+
+  const svgBounds = calculateSVGBounds();
+  const viewBox = `${svgBounds.minX} ${svgBounds.minY} ${svgBounds.width} ${svgBounds.height}`;
+
   const handleAction = useCallback((action, id, payload) => {
     const currentNodes = data?.nodes || [];
     const currentConnections = data?.connections || [];
@@ -271,7 +292,6 @@ const Mindmap = ({ data, onDataChange }) => {
     }
   }, [data, onDataChange, select, clear, selectedIds, connectingFrom, setConnectingFrom]);
 
-  // ***** FIXED: handleMouseMove *****
   const handleMouseMove = useCallback((e) => {
     setMousePos({ x: e.clientX, y: e.clientY });
     if (!dragState) return;
@@ -310,7 +330,6 @@ const Mindmap = ({ data, onDataChange }) => {
     if (e.target === canvasRef.current || e.target.closest('svg')) {}
   }, [canvasRef]); 
 
-  // ***** FIXED: handleCanvasDoubleClick *****
   const handleCanvasDoubleClick = useCallback((e) => {
     if (e.target === canvasRef.current || e.target.closest('svg')) {
       const currentNodes = data?.nodes || [];
@@ -334,7 +353,6 @@ const Mindmap = ({ data, onDataChange }) => {
     zoom(e.deltaY, { x: e.clientX, y: e.clientY });
   }, [zoom]);
 
-  // ***** FIXED: addChildNode *****
   const addChildNode = useCallback(() => {
     if (selectedIds.length !== 1) return;
     const currentNodes = data?.nodes || [];
@@ -356,7 +374,6 @@ const Mindmap = ({ data, onDataChange }) => {
     select(newNode.id);
   }, [selectedIds, data, select, onDataChange]);
 
-  // ***** FIXED: exportData *****
   const exportData = useCallback(() => {
     const exportContent = {
         nodes: data?.nodes || [],
@@ -480,27 +497,41 @@ const Mindmap = ({ data, onDataChange }) => {
         onClick={handleCanvasClick}
         onDoubleClick={handleCanvasDoubleClick}
       >
-        <div
-          className="absolute inset-0"
-          style={{ transform: `translate(${view.x}px, ${view.y}px) scale(${view.scale})`, transformOrigin: '0 0' }}
-        >
-          <svg className="absolute inset-0" width="2000" height="2000" viewBox="0 0 2000 2000" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-                <path d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" strokeWidth="0.5" className="stroke-base-content/10"/>
-              </pattern>
-            </defs>
-            <rect width="2000" height="2000" fill="url(#grid)" />
-            {connections.map((conn, i) => {
-              const from = nodes.find(n => n.id === conn.from);
-              const to = nodes.find(n => n.id === conn.to);
-              return (<Connection key={`${conn.from}-${conn.to}-${i}`} from={from} to={to} isSelected={selectedIds.includes(conn.from) || selectedIds.includes(conn.to)}/>);
-            })}
-            {renderConnectionPreview()}
-          </svg>
-          {nodes.map(node => (
-            <Node key={node.id} node={node} isSelected={selectedIds.includes(node.id)} isConnecting={connectingFrom === node.id} onAction={handleAction}/>
-          ))}
+        <div className="absolute inset-0">
+          <div
+            style={{ transform: `translate(${view.x}px, ${view.y}px) scale(${view.scale})`, transformOrigin: '0 0' }}
+          >
+            <svg 
+              className="absolute inset-0" 
+              width={svgBounds.width} 
+              height={svgBounds.height} 
+              viewBox={viewBox}
+              xmlns="http://www.w3.org/2000/svg"
+              style={{ left: svgBounds.minX, top: svgBounds.minY }}
+            >
+              <defs>
+                <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                  <path d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" strokeWidth="0.5" className="stroke-base-content/10"/>
+                </pattern>
+              </defs>
+              <rect 
+                x={svgBounds.minX} 
+                y={svgBounds.minY}
+                width={svgBounds.width} 
+                height={svgBounds.height} 
+                fill="url(#grid)" 
+              />
+              {connections.map((conn, i) => {
+                const from = nodes.find(n => n.id === conn.from);
+                const to = nodes.find(n => n.id === conn.to);
+                return (<Connection key={`${conn.from}-${conn.to}-${i}`} from={from} to={to} isSelected={selectedIds.includes(conn.from) || selectedIds.includes(conn.to)}/>);
+              })}
+              {renderConnectionPreview()}
+            </svg>
+            {nodes.map(node => (
+              <Node key={node.id} node={node} isSelected={selectedIds.includes(node.id)} isConnecting={connectingFrom === node.id} onAction={handleAction}/>
+            ))}
+          </div>
         </div>
         {nodes.length === 0 && (
           <div className="absolute inset-0 flex items-center justify-center text-base-content/50 pointer-events-none">
