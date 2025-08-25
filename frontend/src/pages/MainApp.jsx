@@ -31,7 +31,7 @@ const useWorkspaceManager = () => {
   });
   
   const [currentWorkspaceName, setCurrentWorkspaceName] = useState('');
-  const [isLoaded, setIsLoaded] = useState(true); // Since we load immediately
+  const [isLoaded, setIsLoaded] = useState(true);
 
   // Save workspaces to localStorage whenever they change
   useEffect(() => {
@@ -77,11 +77,9 @@ const useWorkspaceManager = () => {
   const deleteWorkspace = useCallback((workspaceId) => {
     setSavedWorkspaces(prev => prev.filter(ws => ws.id !== workspaceId));
     
-    // If deleted workspace was the current one, clear current name
     const deletedWorkspace = savedWorkspaces.find(ws => ws.id === workspaceId);
     if (deletedWorkspace && deletedWorkspace.name === currentWorkspaceName) {
       setCurrentWorkspaceName('');
-      // Clear last workspace from localStorage
       try {
         localStorage.removeItem('productivie-last-workspace');
       } catch (e) {
@@ -169,6 +167,19 @@ function HelpTooltip({ children, content }) {
 function MainApp() {
   // All original state variables preserved
   const [tasks, setTasks] = useState([]);
+  
+  // KanbanData state'ini düzelttim
+  const [kanbanData, setKanbanData] = useState(() => {
+    try {
+      const saved = localStorage.getItem('productivie-kanban');
+      return saved ? JSON.parse(saved) : {};
+    } catch (e) {
+      console.error('Failed to load kanban data:', e);
+      return {};
+    }
+  });
+  
+  const [mindmapData, setMindmapData] = useState({});
   const [theme, setTheme] = useState(() => {
     try {
       return localStorage.getItem('productivie-theme') || 'retro';
@@ -224,6 +235,15 @@ function MainApp() {
     isLoaded
   } = useWorkspaceManager();
 
+  // KanbanData'yı localStorage'a kaydet
+  useEffect(() => {
+    try {
+      localStorage.setItem('productivie-kanban', JSON.stringify(kanbanData));
+    } catch (e) {
+      console.error('Failed to save kanban data:', e);
+    }
+  }, [kanbanData]);
+
   // Save theme to localStorage when it changes
   useEffect(() => {
     try {
@@ -249,6 +269,8 @@ function MainApp() {
         const workspaceData = {
           activeComponents,
           tasks,
+          kanbanData,
+          mindmapData,
           theme,
           settings,
           mode,
@@ -260,9 +282,9 @@ function MainApp() {
     }, 20000); // Auto-save every 20 seconds
 
     return () => clearInterval(autoSaveInterval);
-  }, [currentWorkspaceName, activeComponents, tasks, theme, settings, mode, completedPomodoros, taskInput, saveWorkspace]);
+  }, [currentWorkspaceName, activeComponents, tasks, kanbanData, mindmapData, theme, settings, mode, completedPomodoros, taskInput, saveWorkspace]);
 
-  // Load last used workspace on mount - FIXED
+  // Load last used workspace on mount
   useEffect(() => {
     if (isLoaded && savedWorkspaces.length > 0) {
       try {
@@ -329,12 +351,12 @@ function MainApp() {
       TaskSection: 'Task List',
       KanbanBoard: 'Project Board',
       Mindmap: 'Mind Map',
+      HabitTracker: 'Habit tracker',
     };
 
-    // Check if component already exists (prevent duplicates of certain types)
     const existingTypes = activeComponents.map(c => c.type);
     if (['DailyFocus'].includes(type) && existingTypes.includes(type)) {
-      return; // Prevent duplicate daily focus
+      return;
     }
 
     const newComponent = {
@@ -343,20 +365,87 @@ function MainApp() {
       title: titleMap[type] || type,
       x: isMobile ? 10 : Math.random() * 100 + 100,
       y: isMobile ? (activeComponents.length * 320) + 10 : Math.random() * 100 + 150,
-      width: isMobile ? Math.min(320, window.innerWidth - 40) : 320,
-      height: 280,
+      width: isMobile ? Math.min(320, window.innerWidth - 40) : 400, // KanbanBoard için genişlik artırıldı
+      height: type === 'KanbanBoard' ? 450 : 280, // KanbanBoard için yükseklik artırıldı
     };
+
+    // KanbanBoard için düzeltilmiş veri yapısı
+    if (type === 'KanbanBoard') {
+      setKanbanData(prev => ({
+        ...prev,
+        [newComponent.id]: {
+          'todo': { 
+            title: 'To Do', 
+            tasks: [
+              {
+                id: 'sample-1',
+                text: 'Sample task - you can edit or delete this',
+                description: '',
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+              }
+            ] 
+          },
+          'in-progress': { 
+            title: 'In Progress', 
+            tasks: [] 
+          },
+          'done': { 
+            title: 'Done', 
+            tasks: [] 
+          },
+        }
+      }));
+    }
+
+    if (type === 'Mindmap') {
+      setMindmapData(prev => ({
+        ...prev,
+        [newComponent.id]: {
+          nodes: [
+            { id: '1', text: 'Main Idea', x: 300, y: 200, type: 'root' },
+            { id: '2', text: 'Branch 1', x: 150, y: 100, type: 'main' },
+            { id: '3', text: 'Branch 2', x: 450, y: 100, type: 'main' },
+          ],
+          connections: [
+            { from: '1', to: '2' },
+            { from: '1', to: '3' },
+          ]
+        }
+      }));
+    }
 
     setActiveComponents((prev) => [...prev, newComponent]);
     setSelectedComponent(newComponent.id);
   }, [activeComponents, isMobile]);
 
   const removeComponent = useCallback((id) => {
+    const componentToRemove = activeComponents.find(c => c.id === id);
+    
+    // Component silindiğinde ilgili verileri de temizle
+    if (componentToRemove) {
+      if (componentToRemove.type === 'Mindmap') {
+        setMindmapData(prev => {
+          const newState = { ...prev };
+          delete newState[id];
+          return newState;
+        });
+      }
+      
+      if (componentToRemove.type === 'KanbanBoard') {
+        setKanbanData(prev => {
+          const newState = { ...prev };
+          delete newState[id];
+          return newState;
+        });
+      }
+    }
+
     setActiveComponents((prev) => prev.filter((comp) => comp.id !== id));
     if (selectedComponent === id) {
       setSelectedComponent(null);
     }
-  }, [selectedComponent]);
+  }, [selectedComponent, activeComponents]);
 
   const updateComponent = useCallback((id, updates) => {
     setActiveComponents((prev) =>
@@ -372,20 +461,25 @@ function MainApp() {
     if (confirm('Are you sure you want to remove all components? This cannot be undone.')) {
       setActiveComponents([]);
       setSelectedComponent(null);
+      setKanbanData({});
+      setMindmapData({});
       setCurrentWorkspaceName('');
       try {
         localStorage.removeItem('productivie-last-workspace');
+        localStorage.removeItem('productivie-kanban'); // Kanban verisini de temizle
       } catch (e) {
-        console.error('Failed to remove last workspace:', e);
+        console.error('Failed to remove workspace data:', e);
       }
     }
   }, [setCurrentWorkspaceName]);
 
-  // Workspace management functions - FIXED
+  // Workspace management functions
   const handleSaveWorkspace = useCallback((name, data = null) => {
     const workspaceData = data || {
       activeComponents,
       tasks,
+      kanbanData,
+      mindmapData,
       theme,
       settings,
       mode,
@@ -395,9 +489,8 @@ function MainApp() {
     
     const success = saveWorkspace(name, workspaceData);
     if (success) {
-      // Find the workspace ID after saving
       const workspace = savedWorkspaces.find(ws => ws.name === name) || 
-                       { id: Date.now().toString() }; // Fallback
+                       { id: Date.now().toString() };
       try {
         localStorage.setItem('productivie-last-workspace', workspace.id);
       } catch (e) {
@@ -405,13 +498,15 @@ function MainApp() {
       }
     }
     return success;
-  }, [activeComponents, tasks, theme, settings, mode, completedPomodoros, taskInput, saveWorkspace, savedWorkspaces]);
+  }, [activeComponents, tasks, kanbanData, mindmapData, theme, settings, mode, completedPomodoros, taskInput, saveWorkspace, savedWorkspaces]);
 
   const handleLoadWorkspace = useCallback((workspaceId) => {
     const workspaceData = loadWorkspace(workspaceId);
     if (workspaceData) {
       setActiveComponents(workspaceData.activeComponents || []);
       setTasks(workspaceData.tasks || []);
+      setKanbanData(workspaceData.kanbanData || {});
+      setMindmapData(workspaceData.mindmapData || {});
       setTheme(workspaceData.theme || 'retro');
       setSettings(workspaceData.settings || {
         pomodoro: 25 * 60,
@@ -436,6 +531,8 @@ function MainApp() {
     const workspaceData = {
       activeComponents,
       tasks,
+      kanbanData, // Kanban verisini export'a ekle
+      mindmapData,
       theme,
       settings,
       mode,
@@ -445,7 +542,7 @@ function MainApp() {
     
     const exportName = currentWorkspaceName || 'my_workspace';
     exportWorkspace(workspaceData, exportName);
-  }, [activeComponents, tasks, theme, settings, mode, completedPomodoros, taskInput, currentWorkspaceName, exportWorkspace]);
+  }, [activeComponents, tasks, kanbanData, mindmapData, theme, settings, mode, completedPomodoros, taskInput, currentWorkspaceName, exportWorkspace]);
 
   const handleImportWorkspace = useCallback(async (file) => {
     try {
@@ -486,14 +583,88 @@ function MainApp() {
             setTaskInput={setTaskInput}
           />
         );
-      case 'KanbanBoard':
-        return <KanbanBoard key={component.id} />;
+      case 'KanbanBoard': {
+        // Kanban verisi için güvenli erişim
+        const boardData = kanbanData[component.id];
+        
+        // Eğer veri yoksa default veri oluştur
+        if (!boardData) {
+          const defaultData = {
+            'todo': { 
+              title: 'To Do', 
+              tasks: [] 
+            },
+            'in-progress': { 
+              title: 'In Progress', 
+              tasks: [] 
+            },
+            'done': { 
+              title: 'Done', 
+              tasks: [] 
+            },
+          };
+          
+          // Default veriyi hemen set et
+          setKanbanData(prev => ({
+            ...prev,
+            [component.id]: defaultData
+          }));
+          
+          return (
+            <KanbanBoard
+              key={component.id}
+              columns={defaultData}
+              onColumnsChange={(newColumns) => {
+                console.log('Kanban data updated:', newColumns); // Debug için
+                setKanbanData(prev => ({
+                  ...prev,
+                  [component.id]: newColumns,
+                }));
+              }}
+            />
+          );
+        }
+
+        return (
+          <KanbanBoard
+            key={component.id}
+            columns={boardData}
+            onColumnsChange={(newColumns) => {
+              console.log('Kanban data updated:', newColumns); // Debug için
+              setKanbanData(prev => ({
+                ...prev,
+                [component.id]: newColumns,
+              }));
+            }}
+          />
+        );
+      }
       case 'Mindmap':
-        return <Mindmap key={component.id} isDark={theme === 'night'} />;
+        const data = mindmapData[component.id]; 
+
+        return (
+          <Mindmap
+            key={component.id}
+            data={data}
+            isDark={theme === 'night'}
+            onDataChange={(newData) => {
+              setMindmapData(prev => ({
+                ...prev,
+                [component.id]: {
+                  ...prev[component.id],
+                  ...newData,
+                }
+              }));
+            }}
+          />
+        );
+
+      case 'HabitTracker':
+        return <HabitTracker key={component.id} isDark={theme === 'night'} />
       default:
         return <div key={component.id}>Unknown component type</div>;
     }
-  }, [theme, mode, setMode, isRunning, setIsRunning, settings, completedPomodoros, setCompletedPomodoros, pomodoroKey, setPomodoroKey, tasks, setTasks, taskInput, setTaskInput]);
+  }, [theme, mode, setMode, isRunning, setIsRunning, settings, completedPomodoros, setCompletedPomodoros, pomodoroKey, setPomodoroKey, tasks, setTasks, taskInput, setTaskInput, kanbanData, mindmapData]); 
 
   return (
     <div 
@@ -527,7 +698,6 @@ function MainApp() {
                 {activeComponents.length}/8
               </div>
 
-              {/* Workspace Management Button */}
               <button
                 className="btn btn-xs sm:btn-sm btn-ghost"
                 onClick={() => setIsWorkspaceModalOpen(true)}
@@ -693,6 +863,13 @@ function MainApp() {
           }
         }
 
+        .mindmap-canvas {
+          -webkit-user-select: none;
+          -moz-user-select: none;
+          -ms-user-select: none;
+          user-select: none;
+          -webkit-tap-highlight-color: transparent;
+        }
 
         .container {
           max-width: 100%;

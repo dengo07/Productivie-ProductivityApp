@@ -1,32 +1,29 @@
-import { useState, useEffect } from 'react'; 
+
 import TaskItem from './TaskItem.jsx';
 
 // COMPONENT: TaskSection
-const TaskSection = () => {
-  const [tasks, setTasks] = useState(() => {
-    try {
-      const storedTasks = localStorage.getItem('tasks');
-      return storedTasks ? JSON.parse(storedTasks) : [];
-    } catch (error) {
-      console.error("Error parsing tasks from localStorage:", error);
-      return []; 
-    }
-  });
-  const [taskInput, setTaskInput] = useState('');
+const TaskSection = ({ tasks, setTasks, taskInput, setTaskInput }) => {
+  
 
-  useEffect(() => {
-    try {
-      localStorage.setItem('tasks', JSON.stringify(tasks));
-    } catch (error) {
-      console.error("Error saving tasks to localStorage:", error);
-    }
-  }, [tasks]);
 
   const addTask = () => {
     if (taskInput.trim()) {
-      setTasks([...tasks, { text: taskInput, done: false, estimatedPomodoros: 1 }]);
+      // Yeni task objesinin `id`'si olması gelecekteki geliştirmeler için daha iyidir.
+      const newTask = { 
+        id: `task-${Date.now()}`, 
+        text: taskInput, 
+        done: false, 
+        estimatedPomodoros: 1 
+      };
+      setTasks([...tasks, newTask]);
       setTaskInput('');
     }
+  };
+
+    const handleAddTask = (e) => {
+    // Formun varsayılan "sayfayı yenileme" davranışını engelle
+    e.preventDefault(); 
+    addTask();
   };
 
   const toggleTask = (index) => {
@@ -65,25 +62,25 @@ const TaskSection = () => {
         📝 Your Tasks
       </h2>
 
-      <div className="flex gap-2 mb-4">
+      {/* 1. Form etiketini ve onSubmit olayını ekleyin */}
+      <form onSubmit={handleAddTask} className="flex gap-2 mb-4">
         <input
           className="input input-bordered w-full"
           placeholder="Add a new task and press Enter"
           value={taskInput}
           onChange={(e) => setTaskInput(e.target.value)}
-          onKeyPress={(e) => {
-            if (e.key === 'Enter') addTask();
-          }}
+          // 2. onKeyDown olayını buradan kaldırın, artık gerek yok
         />
-        <button onClick={addTask} className="btn btn-success">
+        {/* 3. Butonun type'ını "submit" yapın ve onClick'i kaldırın */}
+        <button type="submit" className="btn btn-success">
           Add
         </button>
-      </div>
+      </form>
 
       <ul className="space-y-3">
         {tasks.map((task, index) => (
           <TaskItem
-            key={index}
+            key={task.id || index}
             task={task}
             index={index}
             onToggle={toggleTask}

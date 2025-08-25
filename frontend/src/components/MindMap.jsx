@@ -96,6 +96,11 @@ const Connection = ({ from, to, isSelected }) => {
 const Node = ({ node, isSelected, isConnecting, onAction }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [text, setText] = useState(node.text);
+  
+  // Update internal text state if the node prop changes from outside
+  useEffect(() => {
+    setText(node.text);
+  }, [node.text]);
 
   const nodeStyles = {
     root: 'bg-primary text-primary-content border-primary scale-105',
@@ -135,8 +140,7 @@ const Node = ({ node, isSelected, isConnecting, onAction }) => {
       onMouseDown={handleMouseDown}
       onDoubleClick={() => setIsEditing(true)}
     >
-      <div className={`relative rounded-xl border-2 min-w-[150px] max-w-[200px] text-center shadow-md hover:shadow-xl transition-all group ${nodeStyles[node.type]} ${isSelected ? 'ring-2 ring-primary ring-offset-2' : ''}`}>
-
+      <div className={`relative rounded-xl border-2 min-w-[150px] max-w-[200px] text-center shadow-md hover:shadow-xl transition-all group ${nodeStyles[node.type] || nodeStyles.sub} ${isSelected ? 'ring-2 ring-primary ring-offset-2' : ''}`}>
         <div className="px-4 py-3">
           {isEditing ? (
             <textarea
@@ -155,6 +159,7 @@ const Node = ({ node, isSelected, isConnecting, onAction }) => {
               className="w-full bg-transparent text-center resize-none outline-none text-sm"
               rows={2}
               autoFocus
+              onClick={(e) => e.stopPropagation()}
             />
           ) : (
             <div className="text-sm font-medium break-words">
@@ -163,8 +168,6 @@ const Node = ({ node, isSelected, isConnecting, onAction }) => {
             </div>
           )}
         </div>
-
-        {/* Action buttons */}
         <div className={`absolute -top-2 -right-2 flex gap-1 transition-opacity ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
           <button
             onClick={(e) => { e.stopPropagation(); onAction('connect', node.id); }}
@@ -181,32 +184,20 @@ const Node = ({ node, isSelected, isConnecting, onAction }) => {
             <X className="w-3 h-3" />
           </button>
         </div>
-
-        {/* Type selector */}
         {isSelected && (
           <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2">
             <select
               value={node.type}
               onChange={(e) => onAction('changeType', node.id, e.target.value)}
+              onClick={(e) => e.stopPropagation()}
               className="select select-xs"
             >
-              <option value="root">
-                <Target className="w-3 h-3 inline mr-1" />
-                Root
-              </option>
-              <option value="main">
-                <FileText className="w-3 h-3 inline mr-1" />
-                Main
-              </option>
-              <option value="sub">
-                <Edit3 className="w-3 h-3 inline mr-1" />
-                Sub
-              </option>
+              <option value="root">Root</option>
+              <option value="main">Main</option>
+              <option value="sub">Sub</option>
             </select>
           </div>
         )}
-
-        {/* Connection indicator */}
         {isConnecting && <div className="absolute inset-0 rounded-xl border-2 border-primary border-dashed animate-pulse" />}
       </div>
     </div>
@@ -214,100 +205,99 @@ const Node = ({ node, isSelected, isConnecting, onAction }) => {
 };
 
 // Main Mindmap component
-const Mindmap = () => {
-  const [nodes, setNodes] = useState([
-    { id: '1', text: 'Main Idea', x: 600, y: 400, type: 'root' },
-    { id: '2', text: 'Branch 1', x: 400, y: 300, type: 'main' },
-    { id: '3', text: 'Branch 2', x: 800, y: 300, type: 'main' },
-  ]);
-
-  const [connections, setConnections] = useState([
-    { from: '1', to: '2' }, { from: '1', to: '3' }
-  ]);
-
-  // dragState will now explicitly define what's being dragged: 'node' or 'canvas'
-  const [dragState, setDragState] = useState(null); // { type: 'node' | 'canvas', startX: number, startY: number, nodeIds?: string[] }
+const Mindmap = ({ data, onDataChange }) => {
+  const { nodes = [], connections = [] } = data || {};
+  
+  const [dragState, setDragState] = useState(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const fileRef = useRef(null);
 
   const { view, canvasRef, screenToCanvas, zoom, pan, reset } = useViewport();
   const { selectedIds, connectingFrom, setConnectingFrom, select, clear } = useSelection();
 
-  // Unified action handler
-  const handleAction = useCallback((action, id, data) => {
+  const handleAction = useCallback((action, id, payload) => {
+    const currentNodes = data?.nodes || [];
+    const currentConnections = data?.connections || [];
+
     switch (action) {
       case 'select':
         if (connectingFrom && connectingFrom !== id) {
-          // Create connection
-          const exists = connections.some(c =>
+          const exists = currentConnections.some(c =>
             (c.from === connectingFrom && c.to === id) || (c.from === id && c.to === connectingFrom)
           );
           if (!exists) {
-            setConnections(prev => [...prev, { from: connectingFrom, to: id }]);
+            const newConnections = [...currentConnections, { from: connectingFrom, to: id }];
+            onDataChange({ nodes: currentNodes, connections: newConnections });
           }
           setConnectingFrom(null);
         } else {
-          select(id, data);
+          select(id, payload);
         }
         break;
 
-      case 'edit':
-        setNodes(prev => prev.map(n => n.id === id ? { ...n, text: data } : n));
+      case 'edit': {
+        const newNodes = currentNodes.map(n => n.id === id ? { ...n, text: payload } : n);
+        onDataChange({ nodes: newNodes, connections: currentConnections });
         break;
+      }
 
-      case 'delete':
+      case 'delete': {
         const idsToDelete = selectedIds.includes(id) ? selectedIds : [id];
-        setNodes(prev => prev.filter(n => !idsToDelete.includes(n.id)));
-        setConnections(prev => prev.filter(c => !idsToDelete.includes(c.from) && !idsToDelete.includes(c.to)));
+        const newNodes = currentNodes.filter(n => !idsToDelete.includes(n.id));
+        const newConnections = currentConnections.filter(c => !idsToDelete.includes(c.from) && !idsToDelete.includes(c.to));
+        onDataChange({ nodes: newNodes, connections: newConnections });
         clear();
         break;
+      }
 
       case 'connect':
         setConnectingFrom(connectingFrom === id ? null : id);
         break;
 
-      case 'changeType':
-        setNodes(prev => prev.map(n => n.id === id ? { ...n, type: data } : n));
+      case 'changeType': {
+        const newNodes = currentNodes.map(n => n.id === id ? { ...n, type: payload } : n);
+        onDataChange({ nodes: newNodes, connections: currentConnections });
         break;
+      }
 
       case 'dragStart':
         setDragState({
           type: 'node',
-          startX: data.clientX,
-          startY: data.clientY,
+          startX: payload.clientX,
+          startY: payload.clientY,
           nodeIds: selectedIds.includes(id) ? selectedIds : [id]
         });
         break;
     }
-  }, [selectedIds, connectingFrom, connections, select, clear, setConnectingFrom]);
+  }, [data, onDataChange, select, clear, selectedIds, connectingFrom, setConnectingFrom]);
 
-  // Mouse handlers
+  // ***** FIXED: handleMouseMove *****
   const handleMouseMove = useCallback((e) => {
     setMousePos({ x: e.clientX, y: e.clientY });
+    if (!dragState) return;
 
-    if (dragState) {
-      const dx = e.clientX - dragState.startX;
-      const dy = e.clientY - dragState.startY;
+    const dx = e.clientX - dragState.startX;
+    const dy = e.clientY - dragState.startY;
 
-      if (dragState.type === 'node') {
-        setNodes(prevNodes => prevNodes.map(node => {
-          if (dragState.nodeIds.includes(node.id)) {
-            // Apply delta based on viewport scale
-            return { ...node, x: node.x + dx / view.scale, y: node.y + dy / view.scale };
-          }
-          return node;
-        }));
-      } else if (dragState.type === 'canvas') {
-        pan(dx, dy);
-      }
-      setDragState(prev => ({ ...prev, startX: e.clientX, startY: e.clientY }));
+    if (dragState.type === 'node') {
+      const currentNodes = data?.nodes || [];
+      const newNodes = currentNodes.map(node => {
+        if (dragState.nodeIds.includes(node.id)) {
+          return { ...node, x: node.x + dx / view.scale, y: node.y + dy / view.scale };
+        }
+        return node;
+      });
+      onDataChange({ nodes: newNodes, connections: data?.connections || [] });
+    } else if (dragState.type === 'canvas') {
+      pan(dx, dy);
     }
-  }, [dragState, view.scale, pan]);
+    
+    setDragState(prev => ({ ...prev, startX: e.clientX, startY: e.clientY }));
+  }, [dragState, view.scale, pan, data, onDataChange]);
 
   const handleMouseUp = useCallback(() => {
     setDragState(null);
   }, []);
-
 
   const handleCanvasMouseDown = useCallback((e) => {
     if (e.target === canvasRef.current || e.target.closest('svg')) { 
@@ -317,12 +307,14 @@ const Mindmap = () => {
   }, [canvasRef, clear]);
 
   const handleCanvasClick = useCallback((e) => {
-    if (e.target === canvasRef.current || e.target.closest('svg')) {
-    }
+    if (e.target === canvasRef.current || e.target.closest('svg')) {}
   }, [canvasRef]); 
 
+  // ***** FIXED: handleCanvasDoubleClick *****
   const handleCanvasDoubleClick = useCallback((e) => {
     if (e.target === canvasRef.current || e.target.closest('svg')) {
+      const currentNodes = data?.nodes || [];
+      const currentConnections = data?.connections || [];
       const pos = screenToCanvas({ x: e.clientX, y: e.clientY });
       const newNode = {
         id: Date.now().toString(),
@@ -331,19 +323,23 @@ const Mindmap = () => {
         x: pos.x,
         y: pos.y
       };
-      setNodes(prev => [...prev, newNode]);
+      const newNodes = [...currentNodes, newNode];
+      onDataChange({ nodes: newNodes, connections: currentConnections });
       select(newNode.id);
     }
-  }, [canvasRef, screenToCanvas, select]);
+  }, [canvasRef, screenToCanvas, select, data, onDataChange]);
 
   const handleWheel = useCallback((e) => {
+    e.preventDefault();
     zoom(e.deltaY, { x: e.clientX, y: e.clientY });
   }, [zoom]);
 
-  // Utility functions
+  // ***** FIXED: addChildNode *****
   const addChildNode = useCallback(() => {
     if (selectedIds.length !== 1) return;
-    const parent = nodes.find(n => n.id === selectedIds[0]);
+    const currentNodes = data?.nodes || [];
+    const currentConnections = data?.connections || [];
+    const parent = currentNodes.find(n => n.id === selectedIds[0]);
     if (!parent) return;
 
     const newNode = {
@@ -354,21 +350,26 @@ const Mindmap = () => {
       y: parent.y + 100
     };
 
-    setNodes(prev => [...prev, newNode]);
-    setConnections(prev => [...prev, { from: parent.id, to: newNode.id }]);
+    const newNodes = [...currentNodes, newNode];
+    const newConnections = [...currentConnections, { from: parent.id, to: newNode.id }];
+    onDataChange({ nodes: newNodes, connections: newConnections });
     select(newNode.id);
-  }, [selectedIds, nodes, select]);
+  }, [selectedIds, data, select, onDataChange]);
 
+  // ***** FIXED: exportData *****
   const exportData = useCallback(() => {
-    const data = JSON.stringify({ nodes, connections }, null, 2);
-    const blob = new Blob([data], { type: 'application/json' });
+    const exportContent = {
+        nodes: data?.nodes || [],
+        connections: data?.connections || []
+    };
+    const blob = new Blob([JSON.stringify(exportContent, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = 'mindmap.json';
     a.click();
     URL.revokeObjectURL(url);
-  }, [nodes, connections]);
+  }, [data]);
 
   const importData = useCallback((e) => {
     const file = e.target.files[0];
@@ -379,8 +380,7 @@ const Mindmap = () => {
       try {
         const { nodes: newNodes, connections: newConnections } = JSON.parse(event.target.result);
         if (Array.isArray(newNodes) && Array.isArray(newConnections)) {
-          setNodes(newNodes);
-          setConnections(newConnections);
+          onDataChange({ nodes: newNodes, connections: newConnections });
           clear();
         }
       } catch (error) {
@@ -388,10 +388,9 @@ const Mindmap = () => {
       }
     };
     reader.readAsText(file);
-    e.target.value = '';
-  }, [clear]);
+    e.target.value = null;
+  }, [clear, onDataChange]);
 
-  // Event listeners
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.target.matches('input, textarea')) return;
@@ -406,7 +405,7 @@ const Mindmap = () => {
           break;
         case 'Escape':
           clear();
-          setConnectingFrom(null); // Also clear connectingFrom on escape
+          setConnectingFrom(null);
           break;
         case 'c':
         case 'C':
@@ -427,20 +426,23 @@ const Mindmap = () => {
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('mouseup', handleMouseUp);
+    
+    // Cleanup wheel listener
+    const canvasEl = canvasRef.current;
+    canvasEl?.addEventListener('wheel', handleWheel, { passive: false });
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
+      canvasEl?.removeEventListener('wheel', handleWheel);
     };
-  }, [selectedIds, handleAction, clear, addChildNode, handleMouseMove, handleMouseUp, setConnectingFrom]);
-
-  // Render connection preview
+  }, [selectedIds, handleAction, clear, addChildNode, handleMouseMove, handleMouseUp, setConnectingFrom, handleWheel]);
+  
   const renderConnectionPreview = () => {
     if (!connectingFrom) return null;
     const fromNode = nodes.find(n => n.id === connectingFrom);
     if (!fromNode) return null;
-    // Mouse position is in screen coordinates, need to convert to canvas coordinates
     const toPos = screenToCanvas(mousePos);
 
     return (
@@ -455,152 +457,68 @@ const Mindmap = () => {
 
   return (
     <div className="w-full h-full flex flex-col bg-base-200 rounded-xl overflow-hidden">
-
-      {/* Toolbar */}
-      <div className="flex items-center justify-between p-2 bg-base-100 border-b">
+      <div className="flex items-center justify-between p-2 bg-base-100 border-b border-base-300">
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1">
             <Brain className="w-4 h-4 text-primary" />
-            <h2 className="font-bold">Mindmap</h2>
-          </div>
-          <div className="badge badge-outline">{nodes.length} nodes</div>
+            <h2 className="font-bold text-sm">Mind Map</h2>
+          <div className="badge badge-outline badge-sm">{nodes.length} nodes</div>
         </div>
-
         <div className="flex items-center gap-1">
-          <button 
-            onClick={() => zoom(1, { x: window.innerWidth / 2, y: window.innerHeight / 2 })} 
-            className="btn btn-sm btn-ghost" 
-            title="Zoom In"
-          >
-            <ZoomIn className="w-4 h-4" />
-          </button>
-          <button 
-            onClick={reset} 
-            className="btn btn-sm btn-ghost" 
-            title="Reset View"
-          >
-            <Home className="w-4 h-4" />
-          </button>
-          <button 
-            onClick={() => zoom(-1, { x: window.innerWidth / 2, y: window.innerHeight / 2 })} 
-            className="btn btn-sm btn-ghost" 
-            title="Zoom Out"
-          >
-            <ZoomOut className="w-4 h-4" />
-          </button>
-          <div className="divider divider-horizontal"></div>
+          <button onClick={() => zoom(1, { x: window.innerWidth / 2, y: window.innerHeight / 2 })} className="btn btn-xs btn-ghost" title="Zoom In"><ZoomIn className="w-4 h-4" /></button>
+          <button onClick={reset} className="btn btn-xs btn-ghost" title="Reset View"><Home className="w-4 h-4" /></button>
+          <button onClick={() => zoom(-1, { x: window.innerWidth / 2, y: window.innerHeight / 2 })} className="btn btn-xs btn-ghost" title="Zoom Out"><ZoomOut className="w-4 h-4" /></button>
+          <div className="divider divider-horizontal mx-1"></div>
           <input ref={fileRef} type="file" accept=".json" onChange={importData} className="hidden" />
-          <button 
-            onClick={() => fileRef.current?.click()} 
-            className="btn btn-sm btn-ghost" 
-            title="Import"
-          >
-            <FolderOpen className="w-4 h-4" />
-          </button>
-          <button 
-            onClick={exportData} 
-            className="btn btn-sm btn-ghost" 
-            title="Export"
-          >
-            <Save className="w-4 h-4" />
-          </button>
+          <button onClick={() => fileRef.current?.click()} className="btn btn-xs btn-ghost" title="Import"><FolderOpen className="w-4 h-4" /></button>
+          <button onClick={exportData} className="btn btn-xs btn-ghost" title="Export"><Save className="w-4 h-4" /></button>
         </div>
       </div>
-
-      {/* Canvas */}
       <div
         ref={canvasRef}
         className="flex-1 relative overflow-hidden cursor-grab"
         onMouseDown={handleCanvasMouseDown}
         onClick={handleCanvasClick}
         onDoubleClick={handleCanvasDoubleClick}
-        onWheelCapture={handleWheel}
       >
         <div
           className="absolute inset-0"
-          style={{
-            transform: `translate(${view.x}px, ${view.y}px) scale(${view.scale})`,
-            transformOrigin: '0 0'
-          }}
+          style={{ transform: `translate(${view.x}px, ${view.y}px) scale(${view.scale})`, transformOrigin: '0 0' }}
         >
-          <svg
-                className="absolute inset-0"
-                width="2000"
-                height="2000"
-                viewBox="0 0 2000 2000"
-                xmlns="http://www.w3.org/2000/svg"
-                >
-                <defs>
-                    <pattern
-                    id="grid"
-                    width="40"
-                    height="40"
-                    patternUnits="userSpaceOnUse"
-                    >
-                    <path
-                        d="M 40 0 L 0 0 0 40"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="0.5"
-                        className="stroke-base-content/10"
-                    />
-                    </pattern>
-                </defs>
-
-                {/* Big rectangle to apply grid pattern */}
-                <rect width="2000" height="2000" fill="url(#grid)" />
-
-                {/* Connections */}
-                {connections.map((conn, i) => {
-                    const from = nodes.find(n => n.id === conn.from);
-                    const to = nodes.find(n => n.id === conn.to);
-                    return (
-                    <Connection
-                        key={`${conn.from}-${conn.to}-${i}`}
-                        from={from}
-                        to={to}
-                        isSelected={selectedIds.includes(conn.from) || selectedIds.includes(conn.to)}
-                    />
-                    );
-                })}
-
-                {renderConnectionPreview()}
-                </svg>
-
-          {/* Nodes */}
+          <svg className="absolute inset-0" width="2000" height="2000" viewBox="0 0 2000 2000" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                <path d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" strokeWidth="0.5" className="stroke-base-content/10"/>
+              </pattern>
+            </defs>
+            <rect width="2000" height="2000" fill="url(#grid)" />
+            {connections.map((conn, i) => {
+              const from = nodes.find(n => n.id === conn.from);
+              const to = nodes.find(n => n.id === conn.to);
+              return (<Connection key={`${conn.from}-${conn.to}-${i}`} from={from} to={to} isSelected={selectedIds.includes(conn.from) || selectedIds.includes(conn.to)}/>);
+            })}
+            {renderConnectionPreview()}
+          </svg>
           {nodes.map(node => (
-            <Node
-              key={node.id}
-              node={node}
-              isSelected={selectedIds.includes(node.id)}
-              isConnecting={connectingFrom === node.id}
-              onAction={handleAction}
-            />
+            <Node key={node.id} node={node} isSelected={selectedIds.includes(node.id)} isConnecting={connectingFrom === node.id} onAction={handleAction}/>
           ))}
         </div>
-
-        {/* Empty state */}
         {nodes.length === 0 && (
-          <div className="absolute inset-0 flex items-center justify-center text-base-content/50">
+          <div className="absolute inset-0 flex items-center justify-center text-base-content/50 pointer-events-none">
             <div className="text-center">
               <Plus className="w-12 h-12 mx-auto mb-4 text-base-content/30" />
-              <h3 className="text-xl font-semibold mb-2">Start Your Mindmap</h3>
-              <p>Double-click anywhere to add your first idea</p>
+              <h3 className="text-lg font-semibold mb-2">Start Your Mind Map</h3>
+              <p className="text-sm">Double-click anywhere to add your first idea.</p>
             </div>
           </div>
         )}
-
-        {/* Connection mode indicator */}
         {connectingFrom && (
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 alert alert-info shadow-lg max-w-md">
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 alert alert-info shadow-lg max-w-md p-2">
             <Link className="w-4 h-4" />
-            <span>Click another node to connect</span>
+            <span className="text-xs">Click another node to connect. Press ESC to cancel.</span>
           </div>
         )}
       </div>
-
-      {/* Status bar */}
-      <div className="flex justify-between px-3 py-1 bg-base-100 border-t text-xs text-base-content/60">
+      <div className="flex justify-between px-3 py-1 bg-base-100 border-t border-base-300 text-xs text-base-content/60">
         <span>Double-click to add • Drag to move • Tab for child • C to connect</span>
         <span>Zoom: {Math.round(view.scale * 100)}%</span>
       </div>
