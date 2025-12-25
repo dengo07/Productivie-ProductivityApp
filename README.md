@@ -1,9 +1,9 @@
-# Productivity Site 🧠💻
+# Productivity Site 🧠
 
 Welcome to **Productivie**, a fully customizable, lightweight, and elegant productivity web app — designed to help you stay focused, organized, and in control of your tasks and goals.
 
-> 🔥 Built with **React + Vite** and styled using **TailwindCSS + DaisyUI**  
-> 🎯 Ideal for anyone who wants a fast, local-first productivity dashboard
+> Built with **React + Vite** and styled using **TailwindCSS + DaisyUI**  
+> Ideal for anyone who wants a fast, local-first productivity dashboard
 
 ---
 
@@ -14,7 +14,6 @@ Welcome to **Productivie**, a fully customizable, lightweight, and elegant produ
 - ⚡ **Super fast**: Vite ensures blazing-fast build times and hot reloading.
 - 📦 **No backend required**: All data is stored locally in your browser using `localStorage`.
 - 📱 **Responsive design**: Fully mobile-compatible.
-- 🧩 **Extensible**: You can easily add your own components.
 
 ---
 
